@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@source "../app/**/*.{js,ts,jsx,tsx}";
+@source "../components/**/*.{js,ts,jsx,tsx}";
+
+@theme {
+  /* Brand color palette */
+  --color-off-white: #FDFDFC;
+  --color-light-gray: #C4C8D3;
+  --color-mid-gray: #BDC0C7;
+  --color-near-black: #0F0F1A;
+  --color-dark-navy: #16162A;
+  --color-primary: #4F46E8;
+  --color-accent: #818CF8;
+
+  /* Fonts */
+  --font-family-heading: var(--font-yeseva), serif;
+  --font-family-body: var(--font-open-sans), sans-serif;
+}
+
+body {
+  font-family: var(--font-open-sans), sans-serif;
+}

@@ -10,7 +10,7 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 1: PROJECT SETUP                                        -->
 <!-- ============================================================ -->
 
-- [ ] 1. Project Setup
+- [x] 1. Project Setup
   - Initialize Next.js 14+ project with TypeScript and Tailwind CSS
   - Install and configure dependencies: iron-session, bcrypt, supabase-js
   - Set up environment variables (.env.local)
@@ -22,13 +22,13 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 2: SHARED UI COMPONENTS                                 -->
 <!-- ============================================================ -->
 
-- [ ] 2. Design System and Shared Components
-  - [ ] 2.1 Configure Tailwind theme
+- [x] 2. Design System and Shared Components
+  - [x] 2.1 Configure Tailwind theme
     - Add brand colors: #FDFDFC, #C4C8D3, #BDC0C7, #0F0F1A, #16162A, #4F46E8, #818CF8
     - Add font families: Yeseva One (headings), Open Sans (body)
     - _Requirements: 14.1_
 
-  - [ ] 2.2 Build reusable UI primitives
+  - [x] 2.2 Build reusable UI primitives
     - Button component (primary, outline, ghost variants)
     - Input component (text, email, password)
     - Select/Dropdown component
@@ -39,7 +39,7 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
     - ProgressBar component
     - _Requirements: 14.1, 14.2_
 
-  - [ ] 2.3 Build Logo component
+  - [x] 2.3 Build Logo component
     - Hexagon icon + "Structura" wordmark
     - White variant for dark backgrounds
     - _Requirements: 14.1_
@@ -48,13 +48,13 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 3: PUBLIC LANDING PAGE                                  -->
 <!-- ============================================================ -->
 
-- [ ] 3. Landing Page UI
-  - [ ] 3.1 Build Navbar
+- [x] 3. Landing Page UI
+  - [x] 3.1 Build Navbar
     - Logo left, nav links center (Features, About, Contact), Sign In button right
     - Dark navy background (#16162A)
     - _Requirements: 14.1_
 
-  - [ ] 3.2 Build Hero section
+  - [x] 3.2 Build Hero section
     - Dark navy bg with radial purple glow
     - "STUDENT ORGANIZATION PLATFORM" badge
     - Heading: "Manage without the chaos." with "chaos." in #818CF8
@@ -62,22 +62,22 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
     - "Get Started →" and "See Features" CTA buttons
     - _Requirements: 14.1_
 
-  - [ ] 3.3 Build Features section
+  - [x] 3.3 Build Features section
     - "WHAT STRUCTURA OFFERS" label + heading
     - 7-card grid (4 top, 3 bottom): emoji icon, title, description
     - _Requirements: 14.1_
 
-  - [ ] 3.4 Build About section
+  - [x] 3.4 Build About section
     - Left-aligned layout
     - "WHY STRUCTURA" label + heading + two body paragraphs
     - _Requirements: 14.1_
 
-  - [ ] 3.5 Build CTA / Pre-footer section
+  - [x] 3.5 Build CTA / Pre-footer section
     - "Ready to get organized?" heading
     - "Get Started Now" button
     - _Requirements: 14.1_
 
-  - [ ] 3.6 Build Footer
+  - [x] 3.6 Build Footer
     - Logo + wordmark left, copyright text right
     - _Requirements: 14.1_
 
@@ -85,8 +85,8 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 4: AUTH PAGES                                           -->
 <!-- ============================================================ -->
 
-- [ ] 4. Authentication Pages UI
-  - [ ] 4.1 Build Sign In page
+- [x] 4. Authentication Pages UI
+  - [x] 4.1 Build Sign In page
     - Logo-only navbar
     - "← Back to home" link
     - "Welcome Back!" heading
@@ -97,7 +97,7 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
     - "Don't have an account? Sign Up" link
     - _Requirements: 1.2, 14.2_
 
-  - [ ] 4.2 Build Register page — shared layout
+  - [x] 4.2 Build Register page — shared layout
     - Logo-only navbar
     - "← Back to home" link
     - "Create a new account" heading
@@ -105,7 +105,7 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
     - Conditionally render student or employee form based on selection
     - _Requirements: 1.1, 14.2_
 
-  - [ ] 4.3 Build Register — Student form
+  - [x] 4.3 Build Register — Student form
     - Personal Info section: First Name, Last Name, E-mail Address
     - Organization Details section: School (dropdown), Organization Name, Department/College, Your Role (dropdown), Student #
     - Password section: Set Password, Confirm Password
@@ -113,7 +113,7 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
     - "Already have an account? Sign In" link
     - _Requirements: 1.1, 14.2_
 
-  - [ ] 4.4 Build Register — Employee form
+  - [x] 4.4 Build Register — Employee form
     - Personal Info section: First Name, Last Name, E-mail Address
     - Office Details section: School (dropdown), Office/Department Name, Position/Title, Employee #, Admin Access Code
     - Password section: Set Password, Confirm Password
@@ -125,42 +125,42 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 5: STUDENT PORTAL UI                                    -->
 <!-- ============================================================ -->
 
-- [ ] 5. Student Portal Layout
-  - [ ] 5.1 Build Student sidebar layout
+- [x] 5. Student Portal Layout
+  - [x] 5.1 Build Student sidebar layout
     - Logo + "Student" role badge (#4F46E8 pill)
     - Nav links: Dashboard, My Events, Documents, Checklists, Budget
     - Active state highlight
     - Bottom: avatar circle with initial, name + org, "← Log out" (placeholder)
     - _Requirements: 14.1, 14.4_
 
-  - [ ] 5.2 Build Student Dashboard page
+  - [x] 5.2 Build Student Dashboard page
     - "Welcome Back, [User]!" heading
     - 4 stat cards: Organizations, Pending Reviews, Total Fund, Active Events (mock data)
     - "MY SUBMISSIONS" table: Event, Date, Status badge
     - "BUDGET OVERVIEW" panel: Allocated/Spent/Remaining rows + progress bar
     - _Requirements: 8.1, 14.1_
 
-  - [ ] 5.3 Build My Events page
+  - [x] 5.3 Build My Events page
     - Page title + filter tabs: All, Pending, Approved, Returned, Completed
     - Table: Event Name, Date, Venue, Budget Req., Status badge, "View" action link
     - Mock data rows
     - _Requirements: 3.3, 14.1_
 
-  - [ ] 5.4 Build Documents page
+  - [x] 5.4 Build Documents page
     - Page title + "+ Upload" button (placeholder) + filter tabs: All, Permits, Contracts, Receipts, Promotional
     - Drag & drop upload zone (UI only, no upload logic)
     - Table: File Name, Type, Event, Size, Uploaded, Status badge, "View" action link
     - Mock data rows
     - _Requirements: 4.2, 14.1_
 
-  - [ ] 5.5 Build Checklists page
+  - [x] 5.5 Build Checklists page
     - Page title + "+ New Checklist" button (placeholder)
     - 3-column card grid
     - Checklist card: event name, "X/Y done" badge, progress bar, checkbox items
     - Mock data card + empty placeholder cards
     - _Requirements: 5.6, 14.1_
 
-  - [ ] 5.6 Build Budget page
+  - [x] 5.6 Build Budget page
     - Page title + "+ Add Expense" button (placeholder)
     - 3 stat cards: Allocated, Spent, Remaining (mock data)
     - Full-width progress bar + "X% of the budget used" label
@@ -172,34 +172,34 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 6: SCHOOL ADMIN PORTAL UI                               -->
 <!-- ============================================================ -->
 
-- [ ] 6. School Admin Portal Layout
-  - [ ] 6.1 Build Admin sidebar layout
+- [x] 6. School Admin Portal Layout
+  - [x] 6.1 Build Admin sidebar layout
     - Logo + "Office" role badge (teal pill)
     - Nav links: Dashboard, Submissions, Users, Budget, Audit Trail
     - Active state highlight
     - Bottom: teal avatar circle, "Admin / Office of Student Life", "← Log out" (placeholder)
     - _Requirements: 14.1, 14.4_
 
-  - [ ] 6.2 Build Admin Dashboard page
+  - [x] 6.2 Build Admin Dashboard page
     - "Admin Overview" heading
     - 4 stat cards: Organizations, Pending Reviews, Total Fund, Active Events (mock data)
     - "PENDING APPROVALS" table: Event, Org, Submitted, "View" action link
     - "FUND ALLOCATION" panel: Total fund/Allocated/Remaining rows + progress bar
     - _Requirements: 8.2, 14.1_
 
-  - [ ] 6.3 Build Submissions page
+  - [x] 6.3 Build Submissions page
     - Page title + filter tabs: All, Pending, Approved, Returned, Rejected
     - Table: Event Name, Organization, Date, Budget Req., Docs badge, Status badge, "Review" action link
     - Mock data rows
     - _Requirements: 3.4, 14.1_
 
-  - [ ] 6.4 Build User Management page
+  - [x] 6.4 Build User Management page
     - Page title + "+ Add User" button (placeholder) + filter tabs: All, Organizer, Officer
     - Table: Name (avatar + initials), Organization, Role, Status badge, "Edit" action link
     - Mock data rows
     - _Requirements: 2.2, 14.1_
 
-  - [ ] 6.5 Build Admin Budget page
+  - [x] 6.5 Build Admin Budget page
     - Page title + "+ Allocate Funds" button (placeholder)
     - 3 stat cards: Total Fund, Allocated, Remaining (mock data)
     - Full-width progress bar + "X% of the budget used" label
@@ -207,7 +207,7 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
     - Mock data rows
     - _Requirements: 6.4, 14.1_
 
-  - [ ] 6.6 Build Audit Trail page
+  - [x] 6.6 Build Audit Trail page
     - Page title + filter tabs: All, Budget, Events, Documents
     - Log entry rows: bold action description + "By [user] · [date] · [time]" + category badge
     - Mock data rows
@@ -217,7 +217,7 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 7: UI CHECKPOINT                                        -->
 <!-- ============================================================ -->
 
-- [ ] 7. UI Checkpoint
+- [x] 7. UI Checkpoint
   - All pages render without errors
   - Navigation works between all pages
   - Responsive layout on desktop and tablet
