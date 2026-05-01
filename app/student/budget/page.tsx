@@ -96,7 +96,7 @@ export default function StudentBudgetPage() {
           if (allocRes.ok && allocJson.success) {
             const allocs = allocJson.data
             const breakdown: EventAllocation[] = await Promise.all(
-              allocs.map(async (alloc: any) => {
+              allocs.map(async (alloc: { event_id?: string; eventId?: string; amount: number }) => {
                 const ev = allEvents.find((e) => e.id === alloc.event_id || e.id === alloc.eventId)
                 const expForEvent = expJson.success
                   ? expJson.data.filter((x: Expenditure) => x.eventId === (alloc.event_id ?? alloc.eventId))

@@ -23,14 +23,14 @@ export interface CreateOrganizationInput {
 /**
  * Maps a raw database row to the Organization interface.
  */
-function mapOrg(row: any): Organization {
+function mapOrg(row: Record<string, unknown>): Organization {
   return {
-    id: row.id,
-    name: row.name,
-    description: row.description ?? null,
-    contactEmail: row.contact_email ?? null,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description as string) ?? null,
+    contactEmail: (row.contact_email as string) ?? null,
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
   }
 }
 

@@ -1,5 +1,6 @@
 // Property-based tests for budget management
 // Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, test, expect, beforeEach } from 'vitest'
 import fc from 'fast-check'

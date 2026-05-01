@@ -16,56 +16,56 @@ import {
 /**
  * Maps a raw database row to a ChecklistTemplateItem interface.
  */
-function mapTemplateItem(row: any): ChecklistTemplateItem {
+function mapTemplateItem(row: Record<string, unknown>): ChecklistTemplateItem {
   return {
-    id: row.id,
-    templateId: row.template_id,
-    description: row.description,
-    orderIndex: row.order_index,
-    createdAt: new Date(row.created_at),
+    id: row.id as string,
+    templateId: row.template_id as string,
+    description: row.description as string,
+    orderIndex: row.order_index as number,
+    createdAt: new Date(row.created_at as string),
   }
 }
 
 /**
  * Maps a raw database row to a ChecklistTemplate interface.
  */
-function mapTemplate(row: any, items: ChecklistTemplateItem[] = []): ChecklistTemplate {
+function mapTemplate(row: Record<string, unknown>, items: ChecklistTemplateItem[] = []): ChecklistTemplate {
   return {
-    id: row.id,
-    name: row.name,
+    id: row.id as string,
+    name: row.name as string,
     items,
-    createdBy: row.created_by ?? null,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
+    createdBy: (row.created_by as string) ?? null,
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
   }
 }
 
 /**
  * Maps a raw database row to a ChecklistItem interface.
  */
-function mapChecklistItem(row: any): ChecklistItem {
+function mapChecklistItem(row: Record<string, unknown>): ChecklistItem {
   return {
-    id: row.id,
-    checklistId: row.checklist_id,
-    description: row.description,
-    isCompleted: row.is_completed,
-    completedAt: row.completed_at ? new Date(row.completed_at) : null,
-    completedBy: row.completed_by ?? null,
-    orderIndex: row.order_index,
-    createdAt: new Date(row.created_at),
+    id: row.id as string,
+    checklistId: row.checklist_id as string,
+    description: row.description as string,
+    isCompleted: row.is_completed as boolean,
+    completedAt: row.completed_at ? new Date(row.completed_at as string) : null,
+    completedBy: (row.completed_by as string) ?? null,
+    orderIndex: row.order_index as number,
+    createdAt: new Date(row.created_at as string),
   }
 }
 
 /**
  * Maps a raw database row to a Checklist interface.
  */
-function mapChecklist(row: any, items: ChecklistItem[] = []): Checklist {
+function mapChecklist(row: Record<string, unknown>, items: ChecklistItem[] = []): Checklist {
   return {
-    id: row.id,
-    eventId: row.event_id,
-    createdFromTemplate: row.created_from_template ?? null,
+    id: row.id as string,
+    eventId: row.event_id as string,
+    createdFromTemplate: (row.created_from_template as string) ?? null,
     items,
-    createdAt: new Date(row.created_at),
+    createdAt: new Date(row.created_at as string),
   }
 }
 

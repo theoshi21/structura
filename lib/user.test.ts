@@ -3,6 +3,7 @@
 // Property 7: Every User Has Exactly One Role
 // Property 8: Role Updates Persist
 // Property 9: Role-Based Permissions Enforced
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { fc } from '@fast-check/vitest'

@@ -1,6 +1,7 @@
 // Integration tests for the authentication flow
 // Tests the full register → login → session → logout cycle
 // Requirements: 1.1, 1.2, 1.3
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest'
 import * as auth from '../auth'

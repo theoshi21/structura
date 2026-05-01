@@ -18,17 +18,17 @@ const VALID_DOCUMENT_TYPES: DocumentType[] = [
 /**
  * Maps a raw database row to the Document interface.
  */
-function mapDocument(row: any): Document {
+function mapDocument(row: Record<string, unknown>): Document {
   return {
-    id: row.id,
-    eventId: row.event_id,
-    fileName: row.file_name,
-    filePath: row.file_path,
-    fileSize: row.file_size,
-    fileType: row.file_type,
+    id: row.id as string,
+    eventId: row.event_id as string,
+    fileName: row.file_name as string,
+    filePath: row.file_path as string,
+    fileSize: row.file_size as number,
+    fileType: row.file_type as string,
     documentType: row.document_type as DocumentType,
-    uploadedBy: row.uploaded_by ?? null,
-    uploadedAt: new Date(row.uploaded_at),
+    uploadedBy: (row.uploaded_by as string) ?? null,
+    uploadedAt: new Date(row.uploaded_at as string),
   }
 }
 

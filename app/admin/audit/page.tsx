@@ -109,7 +109,7 @@ export default function AdminAuditPage() {
         throw new Error(json.error?.message ?? 'Failed to load audit trail')
       }
       // Rehydrate Date objects from JSON strings
-      const hydrated: AuditEntry[] = json.data.map((e: any) => ({
+      const hydrated: AuditEntry[] = json.data.map((e: AuditEntry) => ({
         ...e,
         createdAt: new Date(e.createdAt),
       }))

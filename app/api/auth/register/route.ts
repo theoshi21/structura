@@ -68,11 +68,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error)
 
     // Handle specific errors
-    if (error.message.includes('already exists')) {
+    if (error instanceof Error && error.message.includes('already exists')) {
       return NextResponse.json(
         {
           success: false,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (error.message.includes('Password must be')) {
+    if (error instanceof Error && error.message.includes('Password must be')) {
       return NextResponse.json(
         {
           success: false,

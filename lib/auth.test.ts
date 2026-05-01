@@ -2,6 +2,7 @@
 // Feature: structura, Property 2: Valid Credentials Grant Access
 // Feature: structura, Property 3: Invalid Credentials Rejected
 // Requirements: 1.2, 1.3
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest'
 import fc from 'fast-check'
@@ -15,7 +16,7 @@ vi.mock('./supabase', () => ({
 }))
 
 // Mock database state
-let mockUsers: Map<string, any> = new Map()
+const mockUsers: Map<string, any> = new Map()
 
 // Mock Supabase client
 const mockSupabaseClient = {

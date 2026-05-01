@@ -1,5 +1,6 @@
 // Test utilities for database testing
 // This file provides mock database operations for testing referential integrity
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { createClient } from '@supabase/supabase-js'
 

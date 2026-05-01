@@ -16,17 +16,17 @@ const VALID_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
 /**
  * Maps a raw database row to the Event interface
  */
-function mapEvent(row: any): Event {
+function mapEvent(row: Record<string, unknown>): Event {
   return {
-    id: row.id,
-    name: row.name,
-    description: row.description ?? null,
-    eventDate: new Date(row.event_date),
-    location: row.location ?? null,
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description as string) ?? null,
+    eventDate: new Date(row.event_date as string),
+    location: (row.location as string) ?? null,
     status: row.status as EventStatus,
-    createdBy: row.created_by ?? null,
-    createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at),
+    createdBy: (row.created_by as string) ?? null,
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
   }
 }
 
@@ -132,7 +132,7 @@ export async function updateEvent(
 
   const supabase = createSupabaseClient()
 
-  const updates: Record<string, any> = { updated_at: new Date().toISOString() }
+  const updates: Record<string, string | null> = { updated_at: new Date().toISOString() }
 
   if (data.name !== undefined) updates.name = data.name
   if (data.description !== undefined) updates.description = data.description

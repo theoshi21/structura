@@ -1,6 +1,7 @@
 // Integration tests for role-based access control
 // Verifies that each role can only perform the actions it is permitted to
 // Requirements: 2.3, 2.4, 2.5, 2.6
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest'
 import {

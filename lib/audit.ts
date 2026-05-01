@@ -9,15 +9,15 @@ import { AuditEntry, AuditAction, CreateAuditEntryInput } from '@/types'
 /**
  * Maps a raw database row to the AuditEntry interface.
  */
-function mapAuditEntry(row: any): AuditEntry {
+function mapAuditEntry(row: Record<string, unknown>): AuditEntry {
   return {
-    id: row.id,
+    id: row.id as string,
     action: row.action as AuditAction,
-    entityType: row.entity_type,
-    entityId: row.entity_id,
-    userId: row.user_id ?? null,
-    details: row.details ?? null,
-    createdAt: new Date(row.created_at),
+    entityType: row.entity_type as string,
+    entityId: row.entity_id as string,
+    userId: (row.user_id as string) ?? null,
+    details: (row.details as Record<string, unknown>) ?? null,
+    createdAt: new Date(row.created_at as string),
   }
 }
 

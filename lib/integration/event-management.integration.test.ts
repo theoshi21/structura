@@ -1,6 +1,7 @@
 // Integration tests for the event management flow
 // Tests the full event lifecycle: create → document upload → checklist → budget allocation → expenditure
 // Requirements: 3.1, 4.1, 5.2, 6.2, 6.3
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest'
 import { createEvent, updateEventStatus, getEventById } from '../events'

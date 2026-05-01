@@ -9,38 +9,38 @@ import { logBudgetAllocation, logExpenditure } from './audit'
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
 /** Maps a raw database row to the Budget interface. */
-function mapBudget(row: any): Budget {
+function mapBudget(row: Record<string, unknown>): Budget {
   return {
-    id: row.id,
-    organizationId: row.organization_id,
+    id: row.id as string,
+    organizationId: row.organization_id as string,
     totalFunds: Number(row.total_funds),
-    updatedBy: row.updated_by ?? null,
-    updatedAt: new Date(row.updated_at),
+    updatedBy: (row.updated_by as string) ?? null,
+    updatedAt: new Date(row.updated_at as string),
   }
 }
 
 /** Maps a raw database row to the Allocation interface. */
-function mapAllocation(row: any): Allocation {
+function mapAllocation(row: Record<string, unknown>): Allocation {
   return {
-    id: row.id,
-    eventId: row.event_id,
-    organizationId: row.organization_id,
+    id: row.id as string,
+    eventId: row.event_id as string,
+    organizationId: row.organization_id as string,
     amount: Number(row.amount),
-    allocatedBy: row.allocated_by ?? null,
-    allocatedAt: new Date(row.allocated_at),
+    allocatedBy: (row.allocated_by as string) ?? null,
+    allocatedAt: new Date(row.allocated_at as string),
   }
 }
 
 /** Maps a raw database row to the Expenditure interface. */
-function mapExpenditure(row: any): Expenditure {
+function mapExpenditure(row: Record<string, unknown>): Expenditure {
   return {
-    id: row.id,
-    eventId: row.event_id,
+    id: row.id as string,
+    eventId: row.event_id as string,
     amount: Number(row.amount),
-    description: row.description,
-    documentId: row.document_id ?? null,
-    recordedBy: row.recorded_by ?? null,
-    recordedAt: new Date(row.recorded_at),
+    description: row.description as string,
+    documentId: (row.document_id as string) ?? null,
+    recordedBy: (row.recorded_by as string) ?? null,
+    recordedAt: new Date(row.recorded_at as string),
   }
 }
 
@@ -91,7 +91,7 @@ export async function listOrgBudgets(): Promise<(Budget & { organizationName: st
 
   if (error) throw new Error(`Failed to list budgets: ${error.message}`)
 
-  return (data ?? []).map((row: any) => ({
+  return (data ?? []).map((row: Record<string, unknown> & { organizations?: { name?: string } }) => ({
     ...mapBudget(row),
     organizationName: row.organizations?.name ?? 'Unknown',
   }))
@@ -122,8 +122,8 @@ export async function setOrgBudget(
     .eq('organization_id', organizationId)
     .single()
 
-  let data: any
-  let error: any
+  let data: Record<string, unknown> | null = null
+  let error: { message: string } | null = null
 
   if (existing) {
     // Update the existing record
@@ -391,7 +391,7 @@ export async function getOrgExpenditures(organizationId: string): Promise<Expend
 
   if (!allocs || allocs.length === 0) return []
 
-  const eventIds = allocs.map((a: any) => a.event_id)
+  const eventIds = allocs.map((a: { event_id: string }) => a.event_id)
 
   const { data, error } = await supabase
     .from('expenditures')

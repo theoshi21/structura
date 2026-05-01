@@ -1,5 +1,6 @@
 // Property-based tests for audit trail
 // Requirements: 8.3, 18.1, 18.2, 18.3
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, test, expect, beforeEach } from 'vitest'
 import fc from 'fast-check'

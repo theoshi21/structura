@@ -37,11 +37,11 @@ export async function POST(request: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Login error:', error)
 
     // Handle invalid credentials
-    if (error.message === 'Invalid credentials') {
+    if (error instanceof Error && error.message === 'Invalid credentials') {
       return NextResponse.json(
         {
           success: false,

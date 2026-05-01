@@ -336,7 +336,7 @@ export default function AdminUsersPage() {
               />
               {newRole === editingUser.role && (
                 <p className="mt-1.5 text-xs text-mid-gray">
-                  This is the user's current role. Select a different role to make a change.
+                  This is the user&apos;s current role. Select a different role to make a change.
                 </p>
               )}
             </div>

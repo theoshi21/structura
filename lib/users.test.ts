@@ -1,5 +1,6 @@
 // Property-based tests for user management
 // Requirements: 2.1, 2.2, 2.3
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, test, expect, beforeEach } from 'vitest'
 import fc from 'fast-check'
