@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Yeseva_One, Open_Sans } from 'next/font/google'
+import { ToastProvider } from '@/components/Toast'
 import './globals.css'
 
 /**
@@ -42,7 +43,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${yesevaOne.variable} ${openSans.variable}`}>
       <body className="font-body antialiased">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </body>
     </html>
   )

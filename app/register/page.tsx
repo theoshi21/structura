@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
@@ -12,9 +13,10 @@ type AccountType = 'student' | 'employee'
 
 const schoolOptions = [
   { value: '', label: 'Select a school' },
-  { value: 'university-of-the-philippines', label: 'University of the Philippines' },
+  { value: 'adamson-university', label: 'Adamson University' },
   { value: 'ateneo-de-manila', label: 'Ateneo de Manila University' },
   { value: 'de-la-salle-university', label: 'De La Salle University' },
+  { value: 'university-of-the-philippines', label: 'University of the Philippines' },
   { value: 'university-of-santo-tomas', label: 'University of Santo Tomas' },
   { value: 'other', label: 'Other' },
 ]
@@ -44,7 +46,6 @@ function AuthNavbar() {
 
 /**
  * Horizontal rule divider with a small caps section label.
- * Used to separate form sections (e.g. "Personal Information").
  */
 function SectionDivider({ label }: { label: string }) {
   return (
@@ -58,31 +59,120 @@ function SectionDivider({ label }: { label: string }) {
 }
 
 /**
- * Student registration form — personal info, organization details, and password sections.
- * All handlers are placeholders until Phase 9 auth backend is wired up.
+ * Student registration form.
+ * Loads available organizations from the API and presents them as a dropdown.
+ * Falls back to a free-text input if no organizations have been created yet.
  */
 function StudentForm() {
+  const router = useRouter()
   const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '',
-    school: '', orgName: '', department: '',
+    firstName: '', lastName: '', email: '', username: '',
+    school: '', orgId: '', department: '',
     role: '', studentNumber: '',
     password: '', confirmPassword: '',
     terms: false,
   })
+  const [orgs, setOrgs] = useState<{ value: string; label: string }[]>([])
+  const [orgsLoading, setOrgsLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   /** Updates a single field in the form state */
   function setField(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  /** Placeholder handler — replaced with real API call in Phase 9 */
-  function handleSubmit(e: React.FormEvent) {
+  /** Fetches available organizations from the API for the dropdown */
+  useEffect(() => {
+    fetch('/api/organizations')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) {
+          const options = [
+            { value: '', label: 'Select your organization' },
+            ...json.data.map((o: { id: string; name: string }) => ({
+              value: o.id,
+              label: o.name,
+            })),
+          ]
+          setOrgs(options)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setOrgsLoading(false))
+  }, [])
+
+  /** Handles registration with real API call */
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    console.log('Student register placeholder:', form)
+    setError('')
+
+    if (!form.username.trim()) {
+      setError('Username is required')
+      return
+    }
+
+    if (!form.orgId) {
+      setError('Please select your organization')
+      return
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      // Resolve the selected org name from the dropdown options
+      const selectedOrg = orgs.find((o) => o.value === form.orgId)
+      const organizationName = selectedOrg?.label ?? null
+
+      // President and Vice President get officer role (more permissions within student portal).
+      // All other positions get organizer role.
+      const isOfficer = ['president', 'vice-president'].includes(form.role)
+
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          username: form.username.trim().toLowerCase(),
+          password: form.password,
+          role: isOfficer ? 'officer' : 'organizer',
+          organizationName,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error?.message || 'Failed to create account')
+        setLoading(false)
+        return
+      }
+
+      router.push('/sign-in')
+    } catch (err) {
+      setError('An unexpected error occurred')
+      setLoading(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {error && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+          <p className="font-body text-sm text-red-400">{error}</p>
+        </div>
+      )}
+
       <SectionDivider label="Personal Information" />
 
       <div className="grid grid-cols-2 gap-4">
@@ -93,6 +183,7 @@ function StudentForm() {
           value={form.firstName}
           onChange={(e) => setField('firstName', e.target.value)}
           required
+          disabled={loading}
         />
         <Input
           label="Last Name"
@@ -101,6 +192,7 @@ function StudentForm() {
           value={form.lastName}
           onChange={(e) => setField('lastName', e.target.value)}
           required
+          disabled={loading}
         />
       </div>
 
@@ -111,6 +203,17 @@ function StudentForm() {
         value={form.email}
         onChange={(e) => setField('email', e.target.value)}
         required
+        disabled={loading}
+      />
+
+      <Input
+        label="Username"
+        type="text"
+        placeholder="e.g. juandc2025"
+        value={form.username}
+        onChange={(e) => setField('username', e.target.value)}
+        required
+        disabled={loading}
       />
 
       <SectionDivider label="Organization Details" />
@@ -121,16 +224,34 @@ function StudentForm() {
         value={form.school}
         onChange={(e) => setField('school', e.target.value)}
         required
+        disabled={loading}
       />
 
-      <Input
-        label="Organization Name"
-        type="text"
-        placeholder="e.g. Computer Science Society"
-        value={form.orgName}
-        onChange={(e) => setField('orgName', e.target.value)}
-        required
-      />
+      {/* Organization dropdown — loaded from API */}
+      {orgsLoading ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-mid-gray font-body">
+            Organization
+          </span>
+          <div className="h-10 bg-dark-navy border border-light-gray/30 rounded-lg animate-pulse" />
+        </div>
+      ) : orgs.length <= 1 ? (
+        /* No orgs created yet — show a notice */
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <p className="font-body text-sm text-amber-400">
+            No organizations are available yet. Please ask your admin to create your organization first.
+          </p>
+        </div>
+      ) : (
+        <Select
+          label="Organization"
+          options={orgs}
+          value={form.orgId}
+          onChange={(e) => setField('orgId', e.target.value)}
+          required
+          disabled={loading}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -140,6 +261,7 @@ function StudentForm() {
           value={form.department}
           onChange={(e) => setField('department', e.target.value)}
           required
+          disabled={loading}
         />
         <Select
           label="Your Role"
@@ -147,6 +269,7 @@ function StudentForm() {
           value={form.role}
           onChange={(e) => setField('role', e.target.value)}
           required
+          disabled={loading}
         />
       </div>
 
@@ -157,6 +280,7 @@ function StudentForm() {
         value={form.studentNumber}
         onChange={(e) => setField('studentNumber', e.target.value)}
         required
+        disabled={loading}
       />
 
       <SectionDivider label="Password" />
@@ -169,6 +293,7 @@ function StudentForm() {
           value={form.password}
           onChange={(e) => setField('password', e.target.value)}
           required
+          disabled={loading}
         />
         <Input
           label="Confirm Password"
@@ -177,6 +302,7 @@ function StudentForm() {
           value={form.confirmPassword}
           onChange={(e) => setField('confirmPassword', e.target.value)}
           required
+          disabled={loading}
         />
       </div>
 
@@ -186,7 +312,8 @@ function StudentForm() {
           checked={form.terms}
           onChange={(e) => setField('terms', e.target.checked)}
           required
-          className="mt-0.5 w-4 h-4 rounded border-light-gray/30 bg-dark-navy accent-primary cursor-pointer flex-shrink-0"
+          disabled={loading}
+          className="mt-0.5 w-4 h-4 rounded border-light-gray/30 bg-dark-navy accent-primary cursor-pointer flex-shrink-0 disabled:opacity-50"
         />
         <span className="font-body text-sm text-mid-gray leading-relaxed">
           I agree to the{' '}
@@ -196,39 +323,104 @@ function StudentForm() {
         </span>
       </label>
 
-      <Button type="submit" variant="primary" size="lg" className="w-full rounded-lg mt-1">
-        Create Account
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        className="w-full rounded-lg mt-1"
+        disabled={loading || orgsLoading || orgs.length <= 1}
+      >
+        {loading ? 'Creating Account...' : 'Create Account'}
       </Button>
     </form>
   )
 }
 
 /**
- * Employee registration form — personal info, office details, and password sections.
- * All handlers are placeholders until Phase 9 auth backend is wired up.
+ * Employee registration form.
+ * Sends the access code to the server for validation — the server checks it
+ * against the ADMIN_ACCESS_CODE environment variable.
  */
 function EmployeeForm() {
+  const router = useRouter()
   const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '',
+    firstName: '', lastName: '', email: '', username: '',
     school: '', officeName: '', position: '',
     employeeNumber: '', accessCode: '',
     password: '', confirmPassword: '',
     terms: false,
   })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   /** Updates a single field in the form state */
   function setField(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  /** Placeholder handler — replaced with real API call in Phase 9 */
-  function handleSubmit(e: React.FormEvent) {
+  /** Handles registration with real API call */
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    console.log('Employee register placeholder:', form)
+    setError('')
+
+    if (!form.username.trim()) {
+      setError('Username is required')
+      return
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return
+    }
+
+    if (!form.accessCode) {
+      setError('Admin access code is required')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          username: form.username.trim().toLowerCase(),
+          password: form.password,
+          role: 'admin',
+          accessCode: form.accessCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error?.message || 'Failed to create account')
+        setLoading(false)
+        return
+      }
+
+      router.push('/sign-in')
+    } catch (err) {
+      setError('An unexpected error occurred')
+      setLoading(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {error && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+          <p className="font-body text-sm text-red-400">{error}</p>
+        </div>
+      )}
+
       <SectionDivider label="Personal Information" />
 
       <div className="grid grid-cols-2 gap-4">
@@ -239,6 +431,7 @@ function EmployeeForm() {
           value={form.firstName}
           onChange={(e) => setField('firstName', e.target.value)}
           required
+          disabled={loading}
         />
         <Input
           label="Last Name"
@@ -247,6 +440,7 @@ function EmployeeForm() {
           value={form.lastName}
           onChange={(e) => setField('lastName', e.target.value)}
           required
+          disabled={loading}
         />
       </div>
 
@@ -257,6 +451,17 @@ function EmployeeForm() {
         value={form.email}
         onChange={(e) => setField('email', e.target.value)}
         required
+        disabled={loading}
+      />
+
+      <Input
+        label="Username"
+        type="text"
+        placeholder="e.g. msantos_osa"
+        value={form.username}
+        onChange={(e) => setField('username', e.target.value)}
+        required
+        disabled={loading}
       />
 
       <SectionDivider label="Office Details" />
@@ -267,6 +472,7 @@ function EmployeeForm() {
         value={form.school}
         onChange={(e) => setField('school', e.target.value)}
         required
+        disabled={loading}
       />
 
       <Input
@@ -276,6 +482,7 @@ function EmployeeForm() {
         value={form.officeName}
         onChange={(e) => setField('officeName', e.target.value)}
         required
+        disabled={loading}
       />
 
       <div className="grid grid-cols-2 gap-4">
@@ -286,6 +493,7 @@ function EmployeeForm() {
           value={form.position}
           onChange={(e) => setField('position', e.target.value)}
           required
+          disabled={loading}
         />
         <Input
           label="Employee #"
@@ -294,6 +502,7 @@ function EmployeeForm() {
           value={form.employeeNumber}
           onChange={(e) => setField('employeeNumber', e.target.value)}
           required
+          disabled={loading}
         />
       </div>
 
@@ -304,6 +513,7 @@ function EmployeeForm() {
         value={form.accessCode}
         onChange={(e) => setField('accessCode', e.target.value)}
         required
+        disabled={loading}
       />
 
       <SectionDivider label="Password" />
@@ -316,6 +526,7 @@ function EmployeeForm() {
           value={form.password}
           onChange={(e) => setField('password', e.target.value)}
           required
+          disabled={loading}
         />
         <Input
           label="Confirm Password"
@@ -324,6 +535,7 @@ function EmployeeForm() {
           value={form.confirmPassword}
           onChange={(e) => setField('confirmPassword', e.target.value)}
           required
+          disabled={loading}
         />
       </div>
 
@@ -333,7 +545,8 @@ function EmployeeForm() {
           checked={form.terms}
           onChange={(e) => setField('terms', e.target.checked)}
           required
-          className="mt-0.5 w-4 h-4 rounded border-light-gray/30 bg-dark-navy accent-primary cursor-pointer flex-shrink-0"
+          disabled={loading}
+          className="mt-0.5 w-4 h-4 rounded border-light-gray/30 bg-dark-navy accent-primary cursor-pointer flex-shrink-0 disabled:opacity-50"
         />
         <span className="font-body text-sm text-mid-gray leading-relaxed">
           I agree to the{' '}
@@ -343,16 +556,21 @@ function EmployeeForm() {
         </span>
       </label>
 
-      <Button type="submit" variant="primary" size="lg" className="w-full rounded-lg mt-1">
-        Create Account
+      <Button
+        type="submit"
+        variant="primary"
+        size="lg"
+        className="w-full rounded-lg mt-1"
+        disabled={loading}
+      >
+        {loading ? 'Creating Account...' : 'Create Account'}
       </Button>
     </form>
   )
 }
 
 /**
- * Register page — shared layout with account type toggle that conditionally
- * renders the StudentForm or EmployeeForm based on the selected account type.
+ * Register page — shared layout with account type toggle.
  */
 export default function RegisterPage() {
   const [accountType, setAccountType] = useState<AccountType>('student')
@@ -363,7 +581,6 @@ export default function RegisterPage() {
 
       <main className="flex-1 flex items-start justify-center px-4 py-16">
         <div className="w-full max-w-lg">
-          {/* Back to home */}
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 font-body text-sm text-mid-gray hover:text-off-white transition-colors mb-8"
@@ -371,13 +588,11 @@ export default function RegisterPage() {
             ← Back to home
           </Link>
 
-          {/* Heading */}
           <h1 className="font-heading text-4xl text-off-white mb-2">Create a new account</h1>
           <p className="font-body text-sm text-mid-gray mb-8">
             Choose your account type to get started.
           </p>
 
-          {/* Account type toggle */}
           <div className="flex gap-2 p-1 rounded-xl bg-dark-navy border border-light-gray/15 mb-8">
             <button
               type="button"
@@ -403,10 +618,8 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          {/* Conditionally render the correct form */}
           {accountType === 'student' ? <StudentForm /> : <EmployeeForm />}
 
-          {/* Sign in link */}
           <p className="font-body text-sm text-mid-gray text-center mt-6">
             Already have an account?{' '}
             <Link href="/sign-in" className="text-accent hover:underline">

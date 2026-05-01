@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Logo from '@/components/Logo'
 
 /** Navigation links for the admin sidebar */
@@ -12,13 +13,6 @@ const navLinks = [
   { href: '/admin/budget', label: 'Budget', icon: '💰' },
   { href: '/admin/audit', label: 'Audit Trail', icon: '🔍' },
 ]
-
-/** Mock admin user data */
-const mockAdmin = {
-  name: 'Admin',
-  org: 'Office of Student Life',
-  initial: 'A',
-}
 
 /**
  * Individual sidebar nav link with active state highlight.
@@ -36,7 +30,7 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon: str
         transition-colors duration-150
         ${isActive
           ? 'bg-teal-600 text-white'
-          : 'text-mid-gray hover:text-off-white hover:bg-white/5'
+          : 'text-mid-gray hover:text-off-white hover:bg-surface-raised/5'
         }
       `}
     >
@@ -48,9 +42,33 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon: str
 
 /**
  * Fixed left sidebar for the admin portal.
+ * Fetches the current user from /api/auth/me and displays real name/email.
  * Contains logo, Office role badge, nav links, and admin info at the bottom.
  */
 function AdminSidebar() {
+  const router = useRouter()
+  const [user, setUser] = useState<{ username: string; email: string; organizationName: string | null } | null>(null)
+
+  /** Fetches the current user's profile from the API */
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setUser(json.data)
+      })
+      .catch(() => {/* silently ignore — sidebar still renders */})
+  }, [])
+
+  /** Logs the user out and redirects to sign-in */
+  async function handleLogout(e: React.MouseEvent) {
+    e.preventDefault()
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/sign-in')
+  }
+
+  const displayName = user?.username ?? '—'
+  const displaySub = user?.email ?? ''
+  const initial = displayName.charAt(0).toUpperCase()
   return (
     <aside className="fixed top-0 left-0 h-screen w-56 bg-[#16162A] border-r border-white/5 flex flex-col z-40">
       {/* Top: Logo + role badge */}
@@ -76,19 +94,19 @@ function AdminSidebar() {
         <div className="flex items-center gap-3">
           {/* Teal avatar circle */}
           <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-white font-body">{mockAdmin.initial}</span>
+            <span className="text-sm font-bold text-white font-body">{initial}</span>
           </div>
-          {/* Name + org */}
+          {/* Name + email */}
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold text-off-white font-body truncate">{mockAdmin.name}</span>
-            <span className="text-xs text-mid-gray font-body truncate">{mockAdmin.org}</span>
+            <span className="text-sm font-semibold text-off-white font-body truncate">{displayName}</span>
+            <span className="text-xs text-mid-gray font-body truncate">{displaySub}</span>
           </div>
         </div>
         {/* Log out link */}
         <a
           href="#"
           className="text-xs text-mid-gray hover:text-off-white font-body transition-colors duration-150"
-          onClick={(e) => e.preventDefault()}
+          onClick={handleLogout}
         >
           ← Log out
         </a>

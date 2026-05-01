@@ -13,6 +13,10 @@
   --color-primary: #4F46E8;
   --color-accent: #818CF8;
 
+  /* Surface colors — card/panel backgrounds that sit above the dark-navy page bg */
+  --color-surface: #1E1E32;
+  --color-surface-raised: #26263E;
+
   /* Fonts */
   --font-family-heading: var(--font-yeseva), serif;
   --font-family-body: var(--font-open-sans), sans-serif;
