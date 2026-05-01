@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Logo from '@/components/Logo'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
@@ -20,18 +21,51 @@ function AuthNavbar() {
 }
 
 /**
- * Sign In page — email + password form with placeholder submit handler.
+ * Sign In page — email + password form with real authentication.
  * Includes "Forgot password?" link, "Remember me" checkbox, and register link.
  */
 export default function SignInPage() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  /** Placeholder handler — will be replaced with real auth logic in Phase 9 */
-  function handleSignIn(e: React.FormEvent) {
+  /** Handles sign in with real API call */
+  async function handleSignIn(e: React.FormEvent) {
     e.preventDefault()
-    console.log('Sign in placeholder:', { email, rememberMe })
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error?.message || 'Failed to sign in')
+        setLoading(false)
+        return
+      }
+
+      // Redirect based on role
+      const { role } = data.data
+      if (role === 'organizer' || role === 'officer') {
+        router.push('/student/dashboard')
+      } else if (role === 'admin') {
+        router.push('/admin/dashboard')
+      } else {
+        router.push('/')
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+      setLoading(false)
+    }
   }
 
   return (
@@ -54,6 +88,13 @@ export default function SignInPage() {
             Sign in to your account to continue.
           </p>
 
+          {/* Error message */}
+          {error && (
+            <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+              <p className="font-body text-sm text-red-400">{error}</p>
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSignIn} className="flex flex-col gap-5">
             <Input
@@ -63,6 +104,7 @@ export default function SignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
             />
 
             {/* Password field with "Forgot password?" inline */}
@@ -88,7 +130,8 @@ export default function SignInPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-lg bg-dark-navy border border-light-gray/30 hover:border-light-gray/60 px-4 py-2.5 text-sm text-off-white placeholder:text-mid-gray font-body focus:outline-none focus:ring-2 focus:ring-primary transition-colors duration-150"
+                disabled={loading}
+                className="w-full rounded-lg bg-dark-navy border border-light-gray/30 hover:border-light-gray/60 px-4 py-2.5 text-sm text-off-white placeholder:text-mid-gray font-body focus:outline-none focus:ring-2 focus:ring-primary transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -98,13 +141,20 @@ export default function SignInPage() {
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-light-gray/30 bg-dark-navy accent-primary cursor-pointer"
+                disabled={loading}
+                className="w-4 h-4 rounded border-light-gray/30 bg-dark-navy accent-primary cursor-pointer disabled:opacity-50"
               />
               <span className="font-body text-sm text-mid-gray">Remember me for 30 days</span>
             </label>
 
-            <Button type="submit" variant="primary" size="lg" className="w-full rounded-lg mt-1">
-              Sign In
+            <Button 
+              type="submit" 
+              variant="primary" 
+              size="lg" 
+              className="w-full rounded-lg mt-1"
+              disabled={loading}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 

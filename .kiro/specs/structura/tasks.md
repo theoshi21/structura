@@ -229,17 +229,17 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 8: DATABASE AND TYPES                                   -->
 <!-- ============================================================ -->
 
-- [ ] 8. Database Schema and TypeScript Types
-  - [ ] 8.1 Create database migration files
+- [x] 8. Database Schema and TypeScript Types
+  - [x] 8.1 Create database migration files
     - Tables: users, organizations, events, documents, checklist_templates, checklist_template_items, checklists, checklist_items, budget, allocations, expenditures, audit_trail
     - Indexes, foreign keys, constraints
     - _Requirements: 9.4, 16.2_
 
-  - [ ] 8.2 Write property test for referential integrity
+  - [x] 8.2 Write property test for referential integrity
     - **Property 37: Referential Integrity Maintained**
     - _Requirements: 9.4_
 
-  - [ ] 8.3 Create TypeScript types matching schema
+  - [x] 8.3 Create TypeScript types matching schema
     - Interfaces: User, Organization, Event, Document, Checklist, Budget, Allocation, Expenditure, AuditEntry
     - _Requirements: 3.4, 9.4_
 
@@ -247,33 +247,33 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 9: AUTHENTICATION BACKEND                               -->
 <!-- ============================================================ -->
 
-- [ ] 9. Authentication Backend
-  - [ ] 9.1 Implement password hashing with bcrypt
+- [x] 9. Authentication Backend
+  - [x] 9.1 Implement password hashing with bcrypt
     - _Requirements: 1.5, 13.5_
 
-  - [ ] 9.2 Write property test for password security
+  - [x] 9.2 Write property test for password security
     - **Property 1: Password Security**
     - _Requirements: 1.1, 1.5, 13.5_
 
-  - [ ] 9.3 Implement session management with iron-session
+  - [x] 9.3 Implement session management with iron-session
     - _Requirements: 1.2, 13.2_
 
-  - [ ] 9.4 Write property test for session expiration
+  - [x] 9.4 Write property test for session expiration
     - **Property 5: Session Expiration**
     - _Requirements: 13.2_
 
-  - [ ] 9.5 Create AuthService (register, login, logout)
+  - [x] 9.5 Create AuthService (register, login, logout)
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 9.6 Write property tests for authentication
+  - [x] 9.6 Write property tests for authentication
     - **Property 2: Valid Credentials Grant Access**
     - **Property 3: Invalid Credentials Rejected**
     - _Requirements: 1.2, 1.3_
 
-  - [ ] 9.7 Create authentication middleware for protected routes
+  - [x] 9.7 Create authentication middleware for protected routes
     - _Requirements: 1.4_
 
-  - [ ] 9.8 Wire up Sign In and Register pages to AuthService
+  - [x] 9.8 Wire up Sign In and Register pages to AuthService
     - Replace placeholder handlers with real API calls
     - Add loading states and error messages
     - _Requirements: 1.1, 1.2_
@@ -282,24 +282,24 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 10: USER MANAGEMENT BACKEND                             -->
 <!-- ============================================================ -->
 
-- [ ] 10. User Management Backend
-  - [ ] 10.1 Create UserService (CRUD, role updates)
+- [x] 10. User Management Backend
+  - [x] 10.1 Create UserService (CRUD, role updates)
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 10.2 Create RoleManager for permission checking
+  - [x] 10.2 Create RoleManager for permission checking
     - _Requirements: 2.3, 2.4, 2.5, 2.6_
 
-  - [ ] 10.3 Write property tests for user management
+  - [x] 10.3 Write property tests for user management
     - **Property 7: Every User Has Exactly One Role**
     - **Property 8: Role Updates Persist**
     - **Property 9: Role-Based Permissions Enforced**
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [ ] 10.4 Create API routes for user management
+  - [x] 10.4 Create API routes for user management
     - GET /api/users, PATCH /api/users/[id]/role
     - _Requirements: 2.2_
 
-  - [ ] 10.5 Wire up User Management page to API
+  - [x] 10.5 Wire up User Management page to API
     - Replace mock data with real users
     - Wire "+ Add User" and "Edit" actions
     - _Requirements: 2.2_
@@ -308,19 +308,19 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 11: EVENT MANAGEMENT BACKEND                            -->
 <!-- ============================================================ -->
 
-- [ ] 11. Event Management Backend
-  - [ ] 11.1 Create EventService (CRUD, status transitions)
+- [x] 11. Event Management Backend
+  - [x] 11.1 Create EventService (CRUD, status transitions)
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 17.1, 17.2_
 
-  - [ ] 11.2 Write property tests for event management
+  - [x] 11.2 Write property tests for event management
     - **Property 10–15: Event lifecycle properties**
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 17.1, 17.2_
 
-  - [ ] 11.3 Create API routes for events
+  - [x] 11.3 Create API routes for events
     - POST/GET /api/events, GET/PATCH/DELETE /api/events/[id]
     - _Requirements: 3.1, 3.2, 3.5_
 
-  - [ ] 11.4 Wire up My Events and Submissions pages to API
+  - [x] 11.4 Wire up My Events and Submissions pages to API
     - Replace mock data with real events
     - Wire "View", "Review", and filter tabs
     - _Requirements: 3.3, 3.4_
@@ -329,22 +329,22 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 12: DOCUMENT MANAGEMENT BACKEND                         -->
 <!-- ============================================================ -->
 
-- [ ] 12. Document Management Backend
-  - [ ] 12.1 Create StorageManager (Supabase Storage upload/delete)
+- [x] 12. Document Management Backend
+  - [x] 12.1 Create StorageManager (Supabase Storage upload/delete)
     - _Requirements: 4.1, 4.5, 9.5_
 
-  - [ ] 12.2 Create DocumentService (upload, list, delete)
+  - [x] 12.2 Create DocumentService (upload, list, delete)
     - _Requirements: 4.1, 4.2, 4.5_
 
-  - [ ] 12.3 Write property tests for document management
+  - [x] 12.3 Write property tests for document management
     - **Property 16–20: Document properties**
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-  - [ ] 12.4 Create API routes for documents
+  - [x] 12.4 Create API routes for documents
     - POST/GET /api/events/[id]/documents, DELETE /api/documents/[id]
     - _Requirements: 4.1, 4.2, 4.5_
 
-  - [ ] 12.5 Wire up Documents page to API
+  - [x] 12.5 Wire up Documents page to API
     - Replace mock data, enable drag & drop upload, wire "View" action
     - _Requirements: 4.1, 4.2_
 
@@ -352,18 +352,18 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 13: CHECKLIST BACKEND                                   -->
 <!-- ============================================================ -->
 
-- [ ] 13. Checklist Backend
-  - [ ] 13.1 Create ChecklistTemplateService and ChecklistService
+- [x] 13. Checklist Backend
+  - [x] 13.1 Create ChecklistTemplateService and ChecklistService
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-  - [ ] 13.2 Write property tests for checklists
+  - [x] 13.2 Write property tests for checklists
     - **Property 21–25: Checklist properties**
     - _Requirements: 5.1, 5.3, 5.4, 5.5, 5.7, 5.8_
 
-  - [ ] 13.3 Create API routes for checklists
+  - [x] 13.3 Create API routes for checklists
     - _Requirements: 5.1, 5.2, 5.4, 5.5_
 
-  - [ ] 13.4 Wire up Checklists page to API
+  - [x] 13.4 Wire up Checklists page to API
     - Replace mock data, enable "+ New Checklist", wire checkbox toggles
     - _Requirements: 5.4, 5.5_
 
@@ -371,18 +371,18 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 14: BUDGET BACKEND                                      -->
 <!-- ============================================================ -->
 
-- [ ] 14. Budget Backend
-  - [ ] 14.1 Create BudgetService, AllocationService, ExpenditureService
+- [x] 14. Budget Backend
+  - [x] 14.1 Create BudgetService, AllocationService, ExpenditureService
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3_
 
-  - [ ] 14.2 Write property tests for budget
+  - [x] 14.2 Write property tests for budget
     - **Property 26–32: Budget properties**
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3_
 
-  - [ ] 14.3 Create API routes for budget
+  - [x] 14.3 Create API routes for budget
     - _Requirements: 6.1, 6.2, 6.3_
 
-  - [ ] 14.4 Wire up Student Budget and Admin Budget pages to API
+  - [x] 14.4 Wire up Student Budget and Admin Budget pages to API
     - Replace mock data, enable "+ Add Expense" and "+ Allocate Funds"
     - _Requirements: 6.2, 6.3, 7.1_
 
@@ -390,21 +390,21 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 15: AUDIT TRAIL BACKEND                                 -->
 <!-- ============================================================ -->
 
-- [ ] 15. Audit Trail Backend
-  - [ ] 15.1 Create AuditService (log, retrieve)
+- [x] 15. Audit Trail Backend
+  - [x] 15.1 Create AuditService (log, retrieve)
     - _Requirements: 8.3, 18.1, 18.2_
 
-  - [ ] 15.2 Integrate audit logging into all services
+  - [x] 15.2 Integrate audit logging into all services
     - _Requirements: 3.2, 8.3, 18.1_
 
-  - [ ] 15.3 Write property tests for audit trail
+  - [x] 15.3 Write property tests for audit trail
     - **Property 33–35: Audit properties**
     - _Requirements: 8.3, 18.1, 18.2, 18.3_
 
-  - [ ] 15.4 Create API routes for audit trail
+  - [x] 15.4 Create API routes for audit trail
     - _Requirements: 18.2_
 
-  - [ ] 15.5 Wire up Audit Trail page to API
+  - [x] 15.5 Wire up Audit Trail page to API
     - Replace mock data, wire filter tabs
     - _Requirements: 18.2_
 
@@ -412,44 +412,44 @@ This implementation plan follows a UI-first approach: build all pages, layouts, 
 <!-- PHASE 16: REAL-TIME AND POLISH                                -->
 <!-- ============================================================ -->
 
-- [ ] 16. Real-time Subscriptions
-  - [ ] 16.1 Create RealtimeService for Supabase subscriptions
+- [x] 16. Real-time Subscriptions
+  - [x] 16.1 Create RealtimeService for Supabase subscriptions
     - _Requirements: 10.3_
 
-  - [ ] 16.2 Subscribe to event and budget updates in UI
+  - [x] 16.2 Subscribe to event and budget updates in UI
     - _Requirements: 10.1, 10.2_
 
-- [ ] 17. Integration and Polish
-  - [ ] 17.1 Add loading states to all async operations
+- [x] 17. Integration and Polish
+  - [x] 17.1 Add loading states to all async operations
     - _Requirements: 12.2, 14.2_
 
-  - [ ] 17.2 Add success/error toast notifications
+  - [x] 17.2 Add success/error toast notifications
     - _Requirements: 14.2_
 
-  - [ ] 17.3 Implement client-side form validation
+  - [x] 17.3 Implement client-side form validation
     - _Requirements: 11.1, 11.2, 14.2_
 
-  - [ ] 17.4 Add confirmation dialogs for destructive actions
+  - [x] 17.4 Add confirmation dialogs for destructive actions
     - _Requirements: 14.3_
 
-  - [ ] 17.5 Optimize performance (pagination, query optimization)
+  - [x] 17.5 Optimize performance (pagination, query optimization)
     - _Requirements: 12.1, 12.3_
 
 <!-- ============================================================ -->
 <!-- PHASE 17: INTEGRATION TESTS AND FINAL CHECKPOINT             -->
 <!-- ============================================================ -->
 
-- [ ] 18. Integration Tests
-  - [ ] 18.1 Write integration tests for auth flow
+- [x] 18. Integration Tests
+  - [x] 18.1 Write integration tests for auth flow
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 18.2 Write integration tests for event management flow
+  - [x] 18.2 Write integration tests for event management flow
     - _Requirements: 3.1, 4.1, 5.2, 6.2, 6.3_
 
-  - [ ] 18.3 Write integration tests for role-based access
+  - [x] 18.3 Write integration tests for role-based access
     - _Requirements: 2.3, 2.4, 2.5, 2.6_
 
-- [ ] 19. Final Checkpoint
+- [x] 19. Final Checkpoint
   - Run all tests (unit, property, integration)
   - Verify all requirements are met
   - Test complete user journeys for each role
