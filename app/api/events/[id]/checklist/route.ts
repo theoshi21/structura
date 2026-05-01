@@ -17,12 +17,12 @@ import {
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAuth()
-
-    const event = await getEventById(params.id)
+    const { id } = await params
+    const event = await getEventById(id)
     if (!event) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Event not found' } },
@@ -30,7 +30,7 @@ export async function GET(
       )
     }
 
-    const checklist = await getChecklistByEvent(params.id)
+    const checklist = await getChecklistByEvent(id)
 
     return NextResponse.json({ success: true, data: checklist })
   } catch (error) {
@@ -47,10 +47,11 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { id } = await params
 
     if (!hasPermission(user.role, 'create_checklist')) {
       return NextResponse.json(
@@ -59,7 +60,7 @@ export async function POST(
       )
     }
 
-    const event = await getEventById(params.id)
+    const event = await getEventById(id)
     if (!event) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Event not found' } },
@@ -68,7 +69,7 @@ export async function POST(
     }
 
     // Prevent duplicate checklists for the same event
-    const existing = await getChecklistByEvent(params.id)
+    const existing = await getChecklistByEvent(id)
     if (existing) {
       return NextResponse.json(
         { success: false, error: { code: 'CONFLICT', message: 'Checklist already exists for this event' } },
@@ -81,9 +82,9 @@ export async function POST(
 
     let checklist
     if (templateId) {
-      checklist = await createChecklistFromTemplate(params.id, templateId, user.id)
+      checklist = await createChecklistFromTemplate(id, templateId, user.id)
     } else {
-      checklist = await createCustomChecklist(params.id, items ?? [], user.id)
+      checklist = await createCustomChecklist(id, items ?? [], user.id)
     }
 
     return NextResponse.json({ success: true, data: checklist }, { status: 201 })

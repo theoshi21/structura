@@ -23,10 +23,11 @@ const VALID_DOCUMENT_TYPES: DocumentType[] = [
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { id } = await params
 
     if (!hasPermission(user.role, 'upload_document')) {
       return NextResponse.json(
@@ -35,7 +36,7 @@ export async function POST(
       )
     }
 
-    const event = await getEventById(params.id)
+    const event = await getEventById(id)
     if (!event) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Event not found' } },
@@ -75,7 +76,7 @@ export async function POST(
       )
     }
 
-    const doc = await uploadDocument(file, params.id, documentType as DocumentType, user.id)
+    const doc = await uploadDocument(file, id, documentType as DocumentType, user.id)
 
     return NextResponse.json({ success: true, data: doc }, { status: 201 })
   } catch (error) {
@@ -89,12 +90,12 @@ export async function POST(
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAuth()
-
-    const event = await getEventById(params.id)
+    const { id } = await params
+    const event = await getEventById(id)
     if (!event) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Event not found' } },
@@ -102,7 +103,7 @@ export async function GET(
       )
     }
 
-    const docs = await listDocumentsByEvent(params.id)
+    const docs = await listDocumentsByEvent(id)
 
     return NextResponse.json({ success: true, data: docs })
   } catch (error) {

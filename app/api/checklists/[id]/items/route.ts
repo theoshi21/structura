@@ -13,10 +13,11 @@ import { addChecklistItem } from '@/lib/checklists'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { id } = await params
 
     if (!hasPermission(user.role, 'update_checklist')) {
       return NextResponse.json(
@@ -42,7 +43,7 @@ export async function POST(
       )
     }
 
-    const item = await addChecklistItem(params.id, description.trim(), user.id)
+    const item = await addChecklistItem(id, description.trim(), user.id)
 
     return NextResponse.json({ success: true, data: item }, { status: 201 })
   } catch (error) {

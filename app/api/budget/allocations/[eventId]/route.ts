@@ -13,12 +13,12 @@ import { createSupabaseClient } from '@/lib/supabase'
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     await requireAuth()
-
-    const allocation = await getEventAllocation(params.eventId)
+    const { eventId } = await params
+    const allocation = await getEventAllocation(eventId)
 
     if (!allocation) {
       return NextResponse.json(
@@ -40,10 +40,11 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { eventId } = await params
 
     if (!hasPermission(user.role, 'allocate_funds')) {
       return NextResponse.json(
@@ -62,7 +63,7 @@ export async function PATCH(
       )
     }
 
-    const existing = await getEventAllocation(params.eventId)
+    const existing = await getEventAllocation(eventId)
     if (!existing) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'No allocation found for this event' } },
@@ -75,7 +76,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('allocations')
       .update({ amount, allocated_by: user.id })
-      .eq('event_id', params.eventId)
+      .eq('event_id', eventId)
       .select('id, event_id, amount, allocated_by, allocated_at')
       .single()
 
@@ -98,10 +99,11 @@ export async function PATCH(
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { eventId } = await params
 
     if (!hasPermission(user.role, 'allocate_funds')) {
       return NextResponse.json(
@@ -110,7 +112,7 @@ export async function DELETE(
       )
     }
 
-    await deallocateFunds(params.eventId, user.id)
+    await deallocateFunds(eventId, user.id)
     return NextResponse.json({ success: true, data: null })
   } catch (error) {
     return handleError(error)

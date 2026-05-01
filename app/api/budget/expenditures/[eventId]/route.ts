@@ -11,14 +11,15 @@ import { getEventExpenditures, getEventFinancialSummary } from '@/lib/budget'
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     await requireAuth()
+    const { eventId } = await params
 
     const [expenditures, summary] = await Promise.all([
-      getEventExpenditures(params.eventId),
-      getEventFinancialSummary(params.eventId),
+      getEventExpenditures(eventId),
+      getEventFinancialSummary(eventId),
     ])
 
     return NextResponse.json({ success: true, data: { expenditures, summary } })

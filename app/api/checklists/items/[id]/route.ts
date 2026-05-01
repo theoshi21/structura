@@ -12,10 +12,11 @@ import { toggleChecklistItem, removeChecklistItem } from '@/lib/checklists'
  */
 export async function PATCH(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { id } = await params
 
     if (!hasPermission(user.role, 'update_checklist')) {
       return NextResponse.json(
@@ -24,7 +25,7 @@ export async function PATCH(
       )
     }
 
-    const item = await toggleChecklistItem(params.id, user.id)
+    const item = await toggleChecklistItem(id, user.id)
 
     return NextResponse.json({ success: true, data: item })
   } catch (error) {
@@ -38,10 +39,11 @@ export async function PATCH(
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { id } = await params
 
     if (!hasPermission(user.role, 'update_checklist')) {
       return NextResponse.json(
@@ -50,7 +52,7 @@ export async function DELETE(
       )
     }
 
-    await removeChecklistItem(params.id, user.id)
+    await removeChecklistItem(id, user.id)
 
     return NextResponse.json({ success: true, data: null })
   } catch (error) {

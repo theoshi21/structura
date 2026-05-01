@@ -13,12 +13,12 @@ import { EventStatus } from '@/types'
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAuth()
-
-    const event = await getEventById(params.id)
+    const { id } = await params
+    const event = await getEventById(id)
 
     if (!event) {
       return NextResponse.json(
@@ -40,12 +40,12 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
-
-    const event = await getEventById(params.id)
+    const { id } = await params
+    const event = await getEventById(id)
     if (!event) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Event not found' } },
@@ -73,7 +73,7 @@ export async function PATCH(
         )
       }
 
-      const updated = await updateEventStatus(params.id, status as EventStatus, user.id)
+      const updated = await updateEventStatus(id, status as EventStatus, user.id)
       return NextResponse.json({ success: true, data: updated })
     }
 
@@ -86,7 +86,7 @@ export async function PATCH(
     }
 
     const updated = await updateEvent(
-      params.id,
+      id,
       {
         name,
         description,
@@ -114,10 +114,11 @@ export async function PATCH(
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { id } = await params
 
     if (!hasPermission(user.role, 'delete_event')) {
       return NextResponse.json(
@@ -126,7 +127,7 @@ export async function DELETE(
       )
     }
 
-    const event = await getEventById(params.id)
+    const event = await getEventById(id)
     if (!event) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Event not found' } },
@@ -134,7 +135,7 @@ export async function DELETE(
       )
     }
 
-    await deleteEvent(params.id, user.id)
+    await deleteEvent(id, user.id)
 
     return NextResponse.json({ success: true, data: null })
   } catch (error) {

@@ -62,7 +62,7 @@ function formatAction(entry: AuditEntry): string {
     case 'checklist_item_completed':
       return `Completed checklist item`
     default:
-      return entry.action.replace(/_/g, ' ')
+      return (entry.action as string).replace(/_/g, ' ')
   }
 }
 

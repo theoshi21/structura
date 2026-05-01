@@ -12,10 +12,11 @@ import { deleteOrganization, getOrganizationById } from '@/lib/organizations'
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
+    const { id } = await params
 
     if (!user) {
       return NextResponse.json(
@@ -31,7 +32,7 @@ export async function DELETE(
       )
     }
 
-    const existing = await getOrganizationById(params.id)
+    const existing = await getOrganizationById(id)
     if (!existing) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Organization not found' } },
@@ -39,7 +40,7 @@ export async function DELETE(
       )
     }
 
-    await deleteOrganization(params.id)
+    await deleteOrganization(id)
     return NextResponse.json({ success: true, data: null })
   } catch (error) {
     if (error instanceof Error) {

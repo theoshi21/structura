@@ -91,9 +91,9 @@ export async function listOrgBudgets(): Promise<(Budget & { organizationName: st
 
   if (error) throw new Error(`Failed to list budgets: ${error.message}`)
 
-  return (data ?? []).map((row: Record<string, unknown> & { organizations?: { name?: string } }) => ({
-    ...mapBudget(row),
-    organizationName: row.organizations?.name ?? 'Unknown',
+  return (data ?? []).map((row) => ({
+    ...mapBudget(row as unknown as Record<string, unknown>),
+    organizationName: (row.organizations as { name?: string } | null)?.name ?? 'Unknown',
   }))
 }
 
@@ -147,7 +147,7 @@ export async function setOrgBudget(
   }
 
   if (error) throw new Error(`Failed to set budget: ${error.message}`)
-  return mapBudget(data)
+  return mapBudget(data!)
 }
 
 /**

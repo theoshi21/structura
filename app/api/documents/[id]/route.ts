@@ -12,12 +12,12 @@ import { getDocumentById, deleteDocument, getDocumentUrl } from '@/lib/documents
  */
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAuth()
-
-    const doc = await getDocumentById(params.id)
+    const { id } = await params
+    const doc = await getDocumentById(id)
     if (!doc) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
@@ -25,7 +25,7 @@ export async function GET(
       )
     }
 
-    const url = await getDocumentUrl(params.id)
+    const url = await getDocumentUrl(id)
 
     return NextResponse.json({ success: true, data: { ...doc, url } })
   } catch (error) {
@@ -40,10 +40,11 @@ export async function GET(
  */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await requireAuth()
+    const { id } = await params
 
     if (!hasPermission(user.role, 'delete_document')) {
       return NextResponse.json(
@@ -52,7 +53,7 @@ export async function DELETE(
       )
     }
 
-    const doc = await getDocumentById(params.id)
+    const doc = await getDocumentById(id)
     if (!doc) {
       return NextResponse.json(
         { success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } },
@@ -60,7 +61,7 @@ export async function DELETE(
       )
     }
 
-    await deleteDocument(params.id, user.id)
+    await deleteDocument(id, user.id)
 
     return NextResponse.json({ success: true, data: null })
   } catch (error) {

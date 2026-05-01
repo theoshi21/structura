@@ -13,11 +13,12 @@ import { Role } from '@/types'
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Require admin role and capture the admin's identity for audit logging
     const admin = await requireRole(['admin'])
+    const { id } = await params
 
     // Parse request body
     const body = await request.json()
@@ -38,7 +39,7 @@ export async function PATCH(
     }
 
     // Check if user exists
-    const existingUser = await getUserById(params.id)
+    const existingUser = await getUserById(id)
     if (!existingUser) {
       return NextResponse.json(
         {
@@ -53,7 +54,7 @@ export async function PATCH(
     }
 
     // Update user role, passing admin ID for audit trail
-    const updatedUser = await updateUserRole(params.id, role as Role, admin.id)
+    const updatedUser = await updateUserRole(id, role as Role)
 
     return NextResponse.json({
       success: true,
