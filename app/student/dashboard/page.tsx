@@ -44,26 +44,28 @@ export default function StudentDashboardPage() {
   const [connected, setConnected] = useState(false)
   const [orgName, setOrgName] = useState<string | null>(null)
 
-  /** Fetches events and budget summary from the API */
+  /**
+   * Fetches events, budget summary, and current user in parallel.
+   * Consolidating into one function avoids multiple sequential waterfall fetches on mount.
+   */
   async function fetchData() {
     setLoading(true)
     try {
-      const [eventsRes, budgetRes] = await Promise.all([
+      const [eventsRes, budgetRes, meRes] = await Promise.all([
         fetch('/api/events'),
         fetch('/api/budget'),
+        fetch('/api/auth/me'),
       ])
 
-      const [eventsJson, budgetJson] = await Promise.all([
+      const [eventsJson, budgetJson, meJson] = await Promise.all([
         eventsRes.json(),
         budgetRes.json(),
+        meRes.json(),
       ])
 
-      if (eventsRes.ok && eventsJson.success) {
-        setEvents(eventsJson.data)
-      }
-      if (budgetRes.ok && budgetJson.success) {
-        setSummary(budgetJson.data)
-      }
+      if (eventsRes.ok && eventsJson.success) setEvents(eventsJson.data)
+      if (budgetRes.ok && budgetJson.success) setSummary(budgetJson.data)
+      if (meRes.ok && meJson.success) setOrgName(meJson.data.organizationName ?? null)
     } catch {
       // Dashboard is best-effort; silently ignore fetch errors
     } finally {
@@ -71,18 +73,8 @@ export default function StudentDashboardPage() {
     }
   }
 
-  // Initial data fetch
+  // Single mount fetch — all data in parallel
   useEffect(() => { fetchData() }, [])
-
-  // Fetch the current user's organization name
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setOrgName(json.data.organizationName ?? null)
-      })
-      .catch(() => {})
-  }, [])
 
   // Set up real-time subscriptions to events and budget tables
   useEffect(() => {
@@ -153,7 +145,7 @@ export default function StudentDashboardPage() {
           <span className="text-sm text-mid-gray font-body">Your Organization</span>
         </div>
         <StatCard icon="🕐" value={String(pendingCount)} label="Pending Reviews" />
-        <StatCard icon="💰" value={formatPeso(summary?.totalFunds ?? 0)} label="Total Fund" />
+        <StatCard icon="💰" value={summary ? formatPeso(summary.totalFunds) : '—'} label="Total Fund" />
         <StatCard icon="📅" value={String(activeCount)} label="Active Events" />
       </div>
 
@@ -220,24 +212,32 @@ export default function StudentDashboardPage() {
             Budget Overview
           </span>
           <div className="rounded-xl border border-light-gray/30 bg-surface p-5 flex flex-col gap-4">
-            {/* Budget rows */}
-            <div className="flex flex-col gap-3">
-              {[
-                { label: 'Allocated', value: formatPeso(summary?.allocatedFunds ?? 0) },
-                { label: 'Remaining', value: formatPeso(summary?.availableFunds ?? 0) },
-                { label: 'Total', value: formatPeso(summary?.totalFunds ?? 0) },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-sm text-mid-gray font-body">{label}</span>
-                  <span className="text-sm font-semibold text-off-white font-body">{value}</span>
+            {!summary ? (
+              <p className="text-sm text-mid-gray italic">
+                No budget has been set for your organization yet. Contact your admin.
+              </p>
+            ) : (
+              <>
+                {/* Budget rows */}
+                <div className="flex flex-col gap-3">
+                  {[
+                    { label: 'Allocated', value: formatPeso(summary.allocatedFunds) },
+                    { label: 'Remaining', value: formatPeso(summary.availableFunds) },
+                    { label: 'Total', value: formatPeso(summary.totalFunds) },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className="text-sm text-mid-gray font-body">{label}</span>
+                      <span className="text-sm font-semibold text-off-white font-body">{value}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            {/* Progress bar */}
-            <div className="flex flex-col gap-1.5">
-              <ProgressBar percent={percentUsed} />
-              <span className="text-xs text-mid-gray font-body">{percentUsed}% of the budget allocated</span>
-            </div>
+                {/* Progress bar */}
+                <div className="flex flex-col gap-1.5">
+                  <ProgressBar percent={percentUsed} />
+                  <span className="text-xs text-mid-gray font-body">{percentUsed}% of the budget allocated</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

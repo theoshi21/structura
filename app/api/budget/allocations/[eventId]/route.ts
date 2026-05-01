@@ -1,10 +1,11 @@
-// API routes for a single event allocation: GET/DELETE /api/budget/allocations/[eventId]
+// API routes for a single event allocation: GET/PATCH/DELETE /api/budget/allocations/[eventId]
 // Requirements: 6.2, 6.3
 
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { hasPermission } from '@/lib/roles'
-import { getEventAllocation, deallocateFunds } from '@/lib/budget'
+import { getEventAllocation, deallocateFunds, allocateFunds } from '@/lib/budget'
+import { createSupabaseClient } from '@/lib/supabase'
 
 /**
  * GET /api/budget/allocations/[eventId]
@@ -27,6 +28,65 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: allocation })
+  } catch (error) {
+    return handleError(error)
+  }
+}
+
+/**
+ * PATCH /api/budget/allocations/[eventId]
+ * Updates the allocated amount for an event. Admin only.
+ * Body: { amount }
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { eventId: string } }
+) {
+  try {
+    const user = await requireAuth()
+
+    if (!hasPermission(user.role, 'allocate_funds')) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+    const { amount } = body
+
+    if (typeof amount !== 'number' || amount <= 0) {
+      return NextResponse.json(
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'Amount must be a positive number' } },
+        { status: 400 }
+      )
+    }
+
+    const existing = await getEventAllocation(params.eventId)
+    if (!existing) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'No allocation found for this event' } },
+        { status: 404 }
+      )
+    }
+
+    // Update the allocation amount directly
+    const supabase = createSupabaseClient()
+    const { data, error } = await supabase
+      .from('allocations')
+      .update({ amount, allocated_by: user.id })
+      .eq('event_id', params.eventId)
+      .select('id, event_id, amount, allocated_by, allocated_at')
+      .single()
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: { code: 'INTERNAL_ERROR', message: error.message } },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true, data })
   } catch (error) {
     return handleError(error)
   }

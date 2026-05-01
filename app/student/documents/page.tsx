@@ -14,6 +14,7 @@ const tabs = [
   { label: 'Contracts', value: 'contract' },
   { label: 'Receipts', value: 'receipt' },
   { label: 'Promotional', value: 'promotional' },
+  { label: 'Financial', value: 'financial' },
 ]
 
 /** Valid document type options for the upload form */

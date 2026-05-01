@@ -1,17 +1,41 @@
 // API routes for organizational budget: GET /api/budget, PATCH /api/budget
-// Requirements: 6.1, 6.2, 6.3
+// GET returns the calling user's org budget (students/officers) or all org budgets (admin).
+// PATCH sets the total fund for a specific organization. Admin only.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { hasPermission } from '@/lib/roles'
-import { getBudgetSummary, updateTotalFunds } from '@/lib/budget'
+import { getOrgBudgetSummary, listOrgBudgets, setOrgBudget } from '@/lib/budget'
+import { createSupabaseClient } from '@/lib/supabase'
+
+/**
+ * Resolves the organization for the current user.
+ * Matches by name case-insensitively to handle registration inconsistencies.
+ * Returns null if the user has no organization or no match is found.
+ */
+async function resolveUserOrg(organizationName: string | null): Promise<{ id: string; name: string } | null> {
+  if (!organizationName) return null
+
+  const supabase = createSupabaseClient()
+
+  // Case-insensitive match using ilike
+  const { data } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .ilike('name', organizationName.trim())
+    .limit(1)
+    .single()
+
+  return data ?? null
+}
 
 /**
  * GET /api/budget
- * Returns the organizational budget summary (total, allocated, available funds).
- * Accessible to all authenticated users with view_budget permission.
+ * - Admin: returns all org budgets as an array
+ * - Student/Officer: returns their own org's budget summary
+ * Supports ?orgId= query param for admin to get a specific org's summary
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
 
@@ -22,7 +46,37 @@ export async function GET() {
       )
     }
 
-    const summary = await getBudgetSummary()
+    // Admin with ?orgId= → return that specific org's summary
+    const orgIdParam = request.nextUrl.searchParams.get('orgId')
+    if (orgIdParam && user.role === 'admin') {
+      const supabase = createSupabaseClient()
+      const { data: org } = await supabase.from('organizations').select('id, name').eq('id', orgIdParam).single()
+      if (!org) {
+        return NextResponse.json(
+          { success: false, error: { code: 'NOT_FOUND', message: 'Organization not found' } },
+          { status: 404 }
+        )
+      }
+      const summary = await getOrgBudgetSummary(org.id, org.name)
+      return NextResponse.json({ success: true, data: summary })
+    }
+
+    // Admin without ?orgId= → return all org budgets
+    if (user.role === 'admin') {
+      const budgets = await listOrgBudgets()
+      return NextResponse.json({ success: true, data: budgets })
+    }
+
+    // Student/Officer → return their own org's budget
+    const org = await resolveUserOrg(user.organizationName)
+    if (!org) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NO_ORG', message: 'Your account is not linked to an organization. Contact your admin.' } },
+        { status: 404 }
+      )
+    }
+
+    const summary = await getOrgBudgetSummary(org.id, org.name)
     return NextResponse.json({ success: true, data: summary })
   } catch (error) {
     return handleError(error)
@@ -31,8 +85,8 @@ export async function GET() {
 
 /**
  * PATCH /api/budget
- * Updates the total funds in the organizational budget.
- * Admin only.
+ * Sets the total fund for a specific organization. Admin only.
+ * Body: { organizationId, totalFunds }
  */
 export async function PATCH(request: NextRequest) {
   try {
@@ -46,30 +100,29 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { totalFunds } = body
+    const { organizationId, totalFunds } = body
 
-    if (totalFunds === undefined || totalFunds === null) {
+    if (!organizationId) {
       return NextResponse.json(
-        { success: false, error: { code: 'VALIDATION_ERROR', message: 'totalFunds is required' } },
+        { success: false, error: { code: 'VALIDATION_ERROR', message: 'organizationId is required' } },
         { status: 400 }
       )
     }
 
-    if (typeof totalFunds !== 'number' || totalFunds < 0) {
+    if (totalFunds === undefined || totalFunds === null || typeof totalFunds !== 'number' || totalFunds < 0) {
       return NextResponse.json(
         { success: false, error: { code: 'VALIDATION_ERROR', message: 'totalFunds must be a non-negative number' } },
         { status: 400 }
       )
     }
 
-    const budget = await updateTotalFunds(totalFunds, user.id)
+    const budget = await setOrgBudget(organizationId, totalFunds, user.id)
     return NextResponse.json({ success: true, data: budget })
   } catch (error) {
     return handleError(error)
   }
 }
 
-/** Shared error handler */
 function handleError(error: unknown) {
   if (error instanceof Error) {
     if (error.message === 'Authentication required') {

@@ -33,26 +33,28 @@ export default function AdminDashboardPage() {
   const [connected, setConnected] = useState(false)
   const [orgCount, setOrgCount] = useState<number | null>(null)
 
-  /** Fetches events and budget summary from the API */
+  /**
+   * Fetches events, budget summary, and org count in parallel.
+   * Consolidating into one function avoids multiple sequential waterfall fetches on mount.
+   */
   async function fetchData() {
     setLoading(true)
     try {
-      const [eventsRes, budgetRes] = await Promise.all([
+      const [eventsRes, budgetRes, orgsRes] = await Promise.all([
         fetch('/api/events'),
         fetch('/api/budget'),
+        fetch('/api/organizations'),
       ])
 
-      const [eventsJson, budgetJson] = await Promise.all([
+      const [eventsJson, budgetJson, orgsJson] = await Promise.all([
         eventsRes.json(),
         budgetRes.json(),
+        orgsRes.json(),
       ])
 
-      if (eventsRes.ok && eventsJson.success) {
-        setEvents(eventsJson.data)
-      }
-      if (budgetRes.ok && budgetJson.success) {
-        setSummary(budgetJson.data)
-      }
+      if (eventsRes.ok && eventsJson.success) setEvents(eventsJson.data)
+      if (budgetRes.ok && budgetJson.success) setSummary(budgetJson.data)
+      if (orgsRes.ok && orgsJson.success) setOrgCount(orgsJson.data.length)
     } catch {
       // Dashboard is best-effort; silently ignore fetch errors
     } finally {
@@ -60,26 +62,8 @@ export default function AdminDashboardPage() {
     }
   }
 
-  // Initial data fetch
+  // Single mount fetch — all data in parallel
   useEffect(() => { fetchData() }, [])
-
-  // Fetch distinct organization count from registered organizer users
-  useEffect(() => {
-    fetch('/api/users?role=organizer')
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) {
-          // Count unique non-null organization names
-          const names = new Set(
-            (json.data as { organizationName: string | null }[])
-              .map((u) => u.organizationName)
-              .filter(Boolean)
-          )
-          setOrgCount(names.size)
-        }
-      })
-      .catch(() => {})
-  }, [])
 
   // Set up real-time subscriptions to events and budget tables
   useEffect(() => {

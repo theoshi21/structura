@@ -220,10 +220,11 @@ export interface UpdateTemplateInput {
 // ============================================================
 
 /**
- * Organizational budget (single record)
+ * Organizational budget (one record per organization)
  */
 export interface Budget {
   id: string
+  organizationId: string
   totalFunds: number
   updatedBy: string | null
   updatedAt: Date
@@ -235,6 +236,7 @@ export interface Budget {
 export interface Allocation {
   id: string
   eventId: string
+  organizationId: string
   amount: number
   allocatedBy: string | null
   allocatedAt: Date
@@ -272,9 +274,11 @@ export interface RecordExpenditureInput {
 }
 
 /**
- * Budget summary for display
+ * Budget summary for display — scoped to one organization
  */
 export interface BudgetSummary {
+  organizationId: string
+  organizationName: string
   totalFunds: number
   allocatedFunds: number
   availableFunds: number

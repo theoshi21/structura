@@ -4,13 +4,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { hasPermission } from '@/lib/roles'
-import { allocateFunds, listAllocations } from '@/lib/budget'
+import { allocateFunds, listAllAllocations, listOrgAllocations } from '@/lib/budget'
 
 /**
  * GET /api/budget/allocations
- * Returns all fund allocations. Admin/officer only.
+ * Returns allocations. Supports ?orgId= to filter by organization.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth()
 
@@ -21,7 +21,11 @@ export async function GET() {
       )
     }
 
-    const allocations = await listAllocations()
+    const orgId = request.nextUrl.searchParams.get('orgId')
+    const allocations = orgId
+      ? await listOrgAllocations(orgId)
+      : await listAllAllocations()
+
     return NextResponse.json({ success: true, data: allocations })
   } catch (error) {
     return handleError(error)
@@ -45,17 +49,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { eventId, amount } = body
+    const { eventId, amount, organizationId } = body
 
-    if (!eventId || !amount) {
+    if (!eventId || !amount || !organizationId) {
       return NextResponse.json(
         {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'eventId and amount are required',
+            message: 'eventId, organizationId, and amount are required',
             details: [
               ...(!eventId ? [{ field: 'eventId', message: 'Event ID is required' }] : []),
+              ...(!organizationId ? [{ field: 'organizationId', message: 'Organization ID is required' }] : []),
               ...(!amount ? [{ field: 'amount', message: 'Amount is required' }] : []),
             ],
           },
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const allocation = await allocateFunds(eventId, amount, user.id)
+    const allocation = await allocateFunds(eventId, organizationId, amount, user.id)
     return NextResponse.json({ success: true, data: allocation }, { status: 201 })
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('Insufficient funds')) {
