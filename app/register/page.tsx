@@ -134,9 +134,9 @@ function StudentForm() {
       const selectedOrg = orgs.find((o) => o.value === form.orgId)
       const organizationName = selectedOrg?.label ?? null
 
-      // President and Vice President get officer role (more permissions within student portal).
-      // All other positions get organizer role.
-      const isOfficer = ['president', 'vice-president'].includes(form.role)
+      // Members get officer role (elevated permissions within student portal).
+      // All other positions (President, VP, Secretary, etc.) get organizer role.
+      const isOfficer = form.role === 'member'
 
       const response = await fetch('/api/auth/register', {
         method: 'POST',
