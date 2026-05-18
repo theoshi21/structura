@@ -18,6 +18,7 @@ export interface User {
   email: string
   username: string
   role: Role
+  organizationId: string | null
   organizationName: string | null
   createdAt: Date
   updatedAt: Date

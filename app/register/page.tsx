@@ -146,7 +146,8 @@ function StudentForm() {
           username: form.username.trim().toLowerCase(),
           password: form.password,
           role: isOfficer ? 'officer' : 'organizer',
-          organizationName,
+          organizationName: selectedOrg?.label ?? null,
+          organizationId: form.orgId || null,
         }),
       })
 

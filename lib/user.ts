@@ -4,8 +4,36 @@
 import { createSupabaseClient } from './supabase'
 import { User, Role } from '@/types'
 
+/** Shared select columns for all user queries */
+const USER_COLUMNS = 'id, email, username, role, organization_id, organization_name, created_at, updated_at'
+
 /**
- * Gets a user by their ID
+ * Maps a raw database row to the User interface.
+ */
+function mapUser(user: {
+  id: string
+  email: string
+  username: string
+  role: string
+  organization_id: string | null
+  organization_name: string | null
+  created_at: string
+  updated_at: string
+}): User {
+  return {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    role: user.role as Role,
+    organizationId: user.organization_id ?? null,
+    organizationName: user.organization_name ?? null,
+    createdAt: new Date(user.created_at),
+    updatedAt: new Date(user.updated_at),
+  }
+}
+
+/**
+ * Gets a user by their ID.
  * @param id - User's unique identifier
  * @returns Promise resolving to the user or null if not found
  */
@@ -14,27 +42,16 @@ export async function getUserById(id: string): Promise<User | null> {
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select(USER_COLUMNS)
     .eq('id', id)
     .single()
 
-  if (error || !user) {
-    return null
-  }
-
-  return {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    role: user.role as Role,
-    organizationName: user.organization_name ?? null,
-    createdAt: new Date(user.created_at),
-    updatedAt: new Date(user.updated_at),
-  }
+  if (error || !user) return null
+  return mapUser(user)
 }
 
 /**
- * Gets a user by their email address
+ * Gets a user by their email address.
  * @param email - User's email address
  * @returns Promise resolving to the user or null if not found
  */
@@ -43,27 +60,16 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select(USER_COLUMNS)
     .eq('email', email)
     .single()
 
-  if (error || !user) {
-    return null
-  }
-
-  return {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    role: user.role as Role,
-    organizationName: user.organization_name ?? null,
-    createdAt: new Date(user.created_at),
-    updatedAt: new Date(user.updated_at),
-  }
+  if (error || !user) return null
+  return mapUser(user)
 }
 
 /**
- * Lists all users in the system
+ * Lists all users in the system, optionally filtered by role.
  * @param roleFilter - Optional role to filter by
  * @returns Promise resolving to array of users
  */
@@ -72,7 +78,7 @@ export async function listUsers(roleFilter?: Role): Promise<User[]> {
 
   let query = supabase
     .from('users')
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select(USER_COLUMNS)
     .order('created_at', { ascending: false })
 
   if (roleFilter) {
@@ -81,68 +87,40 @@ export async function listUsers(roleFilter?: Role): Promise<User[]> {
 
   const { data: users, error } = await query
 
-  if (error) {
-    throw new Error(`Failed to list users: ${error.message}`)
-  }
+  if (error) throw new Error(`Failed to list users: ${error.message}`)
 
-  return users.map((user) => ({
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    role: user.role as Role,
-    organizationName: user.organization_name ?? null,
-    createdAt: new Date(user.created_at),
-    updatedAt: new Date(user.updated_at),
-  }))
+  return users.map(mapUser)
 }
 
 /**
- * Updates a user's role
+ * Updates a user's role.
  * @param userId - User's unique identifier
  * @param newRole - New role to assign
  * @returns Promise resolving to the updated user
  * @throws Error if user not found or update fails
  */
 export async function updateUserRole(userId: string, newRole: Role): Promise<User> {
-  // Validate role
   if (!['organizer', 'officer', 'admin'].includes(newRole)) {
     throw new Error('Invalid role')
   }
 
   const supabase = createSupabaseClient()
 
-  // Update the user's role
   const { data: user, error } = await supabase
     .from('users')
-    .update({ 
-      role: newRole,
-      updated_at: new Date().toISOString()
-    })
+    .update({ role: newRole, updated_at: new Date().toISOString() })
     .eq('id', userId)
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select(USER_COLUMNS)
     .single()
 
-  if (error) {
-    throw new Error(`Failed to update user role: ${error.message}`)
-  }
+  if (error) throw new Error(`Failed to update user role: ${error.message}`)
+  if (!user) throw new Error('User not found')
 
-  if (!user) {
-    throw new Error('User not found')
-  }
-
-  return {
-    id: user.id,
-    email: user.email,
-    username: user.username,
-    role: user.role as Role,
-    organizationName: user.organization_name ?? null,
-    createdAt: new Date(user.created_at),
-    updatedAt: new Date(user.updated_at),
-  }
+  return mapUser(user)
 }
 
 /**
- * Deletes a user from the system
+ * Deletes a user from the system.
  * @param userId - User's unique identifier
  * @returns Promise that resolves when deletion is complete
  * @throws Error if deletion fails
@@ -150,37 +128,23 @@ export async function updateUserRole(userId: string, newRole: Role): Promise<Use
 export async function deleteUser(userId: string): Promise<void> {
   const supabase = createSupabaseClient()
 
-  const { error } = await supabase
-    .from('users')
-    .delete()
-    .eq('id', userId)
+  const { error } = await supabase.from('users').delete().eq('id', userId)
 
-  if (error) {
-    throw new Error(`Failed to delete user: ${error.message}`)
-  }
+  if (error) throw new Error(`Failed to delete user: ${error.message}`)
 }
 
 /**
- * Counts users by role
+ * Counts users by role.
  * @returns Promise resolving to object with counts per role
  */
 export async function countUsersByRole(): Promise<Record<Role, number>> {
   const supabase = createSupabaseClient()
 
-  const { data: users, error } = await supabase
-    .from('users')
-    .select('role')
+  const { data: users, error } = await supabase.from('users').select('role')
 
-  if (error) {
-    throw new Error(`Failed to count users: ${error.message}`)
-  }
+  if (error) throw new Error(`Failed to count users: ${error.message}`)
 
-  const counts: Record<Role, number> = {
-    organizer: 0,
-    officer: 0,
-    admin: 0,
-  }
-
+  const counts: Record<Role, number> = { organizer: 0, officer: 0, admin: 0 }
   users.forEach((user) => {
     const role = user.role as Role
     counts[role] = (counts[role] || 0) + 1

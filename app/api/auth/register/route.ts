@@ -13,7 +13,7 @@ import { Role } from '@/types'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, username, password, role, organizationName, accessCode } = body
+    const { email, username, password, role, organizationName, organizationId, accessCode } = body
 
     // Validate required fields
     if (!email || !username || !password || !role) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Register the user
-    const user = await register(email, username, password, role as Role, organizationName ?? null)
+    const user = await register(email, username, password, role as Role, organizationName ?? null, organizationId ?? null)
 
     return NextResponse.json(
       {

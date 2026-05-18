@@ -21,7 +21,8 @@ export async function register(
   username: string,
   password: string,
   role: Role,
-  organizationName?: string
+  organizationName?: string | null,
+  organizationId?: string | null
 ): Promise<User> {
   // Validate inputs
   if (!email || !username || !password || !role) {
@@ -72,8 +73,9 @@ export async function register(
       password_hash: passwordHash,
       role,
       organization_name: organizationName ?? null,
+      organization_id: organizationId ?? null,
     })
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select('id, email, username, role, organization_id, organization_name, created_at, updated_at')
     .single()
 
   if (error) {
@@ -85,6 +87,7 @@ export async function register(
     email: user.email,
     username: user.username,
     role: user.role as Role,
+    organizationId: user.organization_id ?? null,
     organizationName: user.organization_name ?? null,
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
@@ -153,7 +156,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select('id, email, username, role, organization_id, organization_name, created_at, updated_at')
     .eq('id', sessionData.userId)
     .single()
 
@@ -166,6 +169,7 @@ export async function getCurrentUser(): Promise<User | null> {
     email: user.email,
     username: user.username,
     role: user.role as Role,
+    organizationId: user.organization_id ?? null,
     organizationName: user.organization_name ?? null,
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),

@@ -5,13 +5,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { hasPermission } from '@/lib/roles'
 import { createEvent, listEvents } from '@/lib/events'
-import { listOrganizations } from '@/lib/organizations'
 import { EventFilters, EventStatus } from '@/types'
 
 /**
  * POST /api/events
  * Creates a new event proposal (organizer, officer, admin).
- * Resolves the user's organization ID from their organization_name before saving.
+ * Stores the user's organization_id directly on the event.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -44,18 +43,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Resolve the user's organization ID from their stored organization_name
-    let organizationId: string | null = null
-    if (user.organizationName) {
-      const orgs = await listOrganizations()
-      const match = orgs.find((o) => o.name === user.organizationName)
-      organizationId = match?.id ?? null
-    }
-
     const event = await createEvent(
       { name, description, eventDate: new Date(eventDate), location },
       user.id,
-      organizationId
+      user.organizationId
     )
 
     return NextResponse.json({ success: true, data: event }, { status: 201 })
@@ -95,10 +86,8 @@ export async function GET(request: NextRequest) {
     if (dateTo) filters.dateTo = new Date(dateTo)
 
     // Admins see all events; organizers and officers only see their org's events
-    if (user.role !== 'admin' && user.organizationName) {
-      const orgs = await listOrganizations()
-      const match = orgs.find((o) => o.name === user.organizationName)
-      if (match) filters.organizationId = match.id
+    if (user.role !== 'admin' && user.organizationId) {
+      filters.organizationId = user.organizationId
     }
 
     const events = await listEvents(filters)
