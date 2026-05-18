@@ -8,7 +8,7 @@ import { Role } from '@/types'
 /**
  * POST /api/auth/register
  * Registers a new user account.
- * Admin/officer registrations require a valid ADMIN_ACCESS_CODE in the request body.
+ * Only admin registrations require a valid ADMIN_ACCESS_CODE in the request body.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Admin/officer accounts require a valid access code
-    if (role === 'admin' || role === 'officer') {
+    // Only admin accounts require a valid access code
+    if (role === 'admin') {
       const validCode = process.env.ADMIN_ACCESS_CODE
       if (!validCode) {
         return NextResponse.json(
