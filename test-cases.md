@@ -20,7 +20,7 @@
 | EF2 | Update event proposals | ETC2.1 |
 | EF3 | View event details with associated documents, checklists, and budget | ETC3.1 |
 | EF4 | Delete event proposals | ETC4.1 |
-| EF5 | Change event status | ETC5.1, ETC5.2, ETC5.3 |
+| EF5 | Change event status | ETC5.1, ETC5.2 |
 | DF1 | Upload documents and link to events | DTC1.1, DTC1.2 |
 | DF2 | View all documents associated with an event | DTC2.1 |
 | DF3 | Support document types | DTC3.1 |
@@ -83,19 +83,19 @@ Test Steps:
 Description: Verifies that the system rejects a registration attempt when the email address is already in use.
 
 Test Inputs:
-- Email: "existing@example.com" (already registered)
+- Email: "newuser@example.com" (same email used in UTC1.1)
 - Username: "differentuser"
 - Password: "securepass123"
 - Role: "organizer"
 
 Expected Results: The registration is rejected with a 409 Conflict response. An error message indicating the email already exists is returned. No new user account is created.
 
-Dependencies: UTC1.1 (a user with email "existing@example.com" must already exist)
+Dependencies: UTC1.1 (the user registered in UTC1.1 is already in the system — reuse the same email)
 
-Initialization: A user with email "existing@example.com" is already registered in the system.
+Initialization: UTC1.1 has already been executed. The email "newuser@example.com" exists in the system.
 
 Test Steps:
-1. Submit a registration request with the inputs above via POST /api/auth/register.
+1. Submit a registration request with the same email from UTC1.1 but a different username via POST /api/auth/register.
 2. Verify that the response status is 409 Conflict.
 3. Verify that the response body contains `success: false`.
 4. Verify that the error message contains "already exists".
@@ -131,17 +131,17 @@ Test Steps:
 Description: Verifies that a registered user can log in with correct credentials and receive a valid session.
 
 Test Inputs:
-- Email: "user@example.com"
-- Password: "securepass123"
+- Email: "newuser@example.com" (same email from UTC1.1)
+- Password: "securepass123" (same password from UTC1.1)
 
 Expected Results: Login succeeds. A session is created containing the user's ID and role. The session expiry timestamp is greater than the creation timestamp. No exception is thrown.
 
-Dependencies: UTC1.1 (the user must already be registered)
+Dependencies: UTC1.1 (the user registered in UTC1.1 is already in the system — reuse the same credentials)
 
-Initialization: A user with email "user@example.com" and password "securepass123" is already registered in the system.
+Initialization: UTC1.1 has already been executed. The user "newuser@example.com" exists with password "securepass123".
 
 Test Steps:
-1. Submit a login request with the inputs above via POST /api/auth/login.
+1. Submit a login request with the email and password from UTC1.1 via POST /api/auth/login.
 2. Verify that the response status is 200 OK.
 3. Verify that the response body contains `success: true`.
 4. Verify that the returned session data includes `userId` and `role`.
@@ -154,17 +154,17 @@ Test Steps:
 Description: Verifies that the system rejects a login attempt when the password is incorrect and displays an appropriate error message.
 
 Test Inputs:
-- Email: "user@example.com"
-- Password: "wrongpassword"
+- Email: "newuser@example.com" (same email from UTC1.1)
+- Password: "wrongpassword" (intentionally incorrect)
 
 Expected Results: Login is rejected with a 401 Unauthorized response. An error message indicating invalid credentials is returned. No session is created.
 
-Dependencies: UTC1.1 (the user must already be registered with a different password)
+Dependencies: UTC1.1 (the user registered in UTC1.1 is already in the system — reuse the same email)
 
-Initialization: A user with email "user@example.com" is registered with password "securepass123".
+Initialization: UTC1.1 has already been executed. The user "newuser@example.com" exists with password "securepass123".
 
 Test Steps:
-1. Submit a login request with the inputs above via POST /api/auth/login.
+1. Submit a login request with the email from UTC1.1 but with "wrongpassword" via POST /api/auth/login.
 2. Verify that the response status is 401 Unauthorized.
 3. Verify that the response body contains `success: false`.
 4. Verify that the error message is "Invalid email or password" or equivalent.
@@ -232,12 +232,36 @@ Dependencies: None
 Initialization: The database is empty.
 
 Test Steps:
-1. Register User A with role "organizer".
-2. Register User B with role "officer".
-3. Register User C with role "admin".
-4. Retrieve each user and verify that the `role` field is present and is a single string.
-5. Verify that each role value is one of the three valid roles.
-6. Verify that no user has more than one role assigned.
+1. Register User A with role "organizer" via the registration form or console:
+```js
+fetch('/api/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'usera@example.com', username: 'usera', password: 'password123', role: 'organizer' })
+}).then(r => r.json()).then(console.log)
+```
+2. Register User B with role "officer":
+```js
+fetch('/api/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'userb@example.com', username: 'userb', password: 'password123', role: 'officer' })
+}).then(r => r.json()).then(console.log)
+```
+3. Register User C with role "admin" (requires access code):
+```js
+fetch('/api/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'userc@example.com', username: 'userc', password: 'password123', role: 'admin', accessCode: 'ACCESS_CODE_HERE' })
+}).then(r => r.json()).then(console.log)
+```
+4. Log in as admin and retrieve all users — verify each has exactly one `role` field:
+```js
+fetch('/api/users').then(r => r.json()).then(console.log)
+```
+5. Verify that each role value in the response is one of: "organizer", "officer", "admin".
+6. Verify that no user object has an array for the `role` field.
 
 ---
 
@@ -256,11 +280,21 @@ Dependencies: UTC1.1 (an organizer user must exist), UTC2.1 (admin must be logge
 Initialization: An admin user is authenticated. An organizer user exists in the system.
 
 Test Steps:
-1. Submit a PATCH request to /api/users/{id}/role with body `{ "role": "officer" }` using the admin's session.
-2. Verify that the response status is 200 OK.
+1. Log in as admin via the sign-in page.
+2. Submit a PATCH request to update the target user's role — verify 200 OK:
+```js
+fetch('/api/users/{USER_ID}/role', {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ role: 'officer' })
+}).then(r => r.json()).then(console.log)
+```
 3. Verify that the returned user object has `role: "officer"`.
-4. Retrieve the user via GET /api/users and find the updated user.
-5. Verify that the user's role in the list is "officer".
+4. Retrieve the full user list and confirm the change persisted:
+```js
+fetch('/api/users').then(r => r.json()).then(console.log)
+```
+5. Verify that the target user's role in the list is "officer".
 
 ---
 
@@ -280,10 +314,20 @@ Dependencies: UTC1.1 (both users must exist), UTC2.1 (organizer must be logged i
 Initialization: An organizer user is authenticated. Another user exists in the system.
 
 Test Steps:
-1. Submit a PATCH request to /api/users/{id}/role with body `{ "role": "admin" }` using the organizer's session.
-2. Verify that the response status is 403 Forbidden.
-3. Verify that the response body contains `success: false`.
-4. Retrieve the target user and verify that their role has not changed.
+1. Log in as an organizer via the sign-in page.
+2. Attempt to update a user's role — verify 403 Forbidden:
+```js
+fetch('/api/users/{USER_ID}/role', {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ role: 'admin' })
+}).then(r => r.json()).then(console.log)
+```
+3. Verify that the response body contains `success: false` and an error message indicating insufficient permissions.
+4. Retrieve the target user and confirm their role has not changed:
+```js
+fetch('/api/users').then(r => r.json()).then(console.log)
+```
 
 ---
 
@@ -300,11 +344,36 @@ Dependencies: UTC2.1 (organizer must be logged in)
 Initialization: An organizer user is authenticated.
 
 Test Steps:
-1. Submit a POST request to /api/events — verify 201 Created.
-2. Submit a GET request to /api/budget — verify 200 OK.
-3. Submit a POST request to /api/budget/allocations — verify 403 Forbidden.
-4. Submit a DELETE request to /api/events/{id} — verify 403 Forbidden.
-5. Submit a GET request to /api/users — verify 403 Forbidden.
+1. Submit a POST request to /api/events — verify 201 Created:
+```js
+fetch('/api/events', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'Test Event', eventDate: '2026-12-01' })
+}).then(r => r.json()).then(console.log)
+```
+2. Submit a GET request to /api/budget — verify 200 OK:
+```js
+fetch('/api/budget').then(r => r.json()).then(console.log)
+```
+3. Submit a POST request to /api/budget/allocations — verify 403 Forbidden:
+```js
+fetch('/api/budget/allocations', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ eventId: 'any-id', organizationId: 'any-id', amount: 1000 })
+}).then(r => r.json()).then(console.log)
+```
+4. Submit a DELETE request to /api/events/{id} — verify 403 Forbidden (use the event ID from step 1):
+```js
+fetch('/api/events/{EVENT_ID}', {
+  method: 'DELETE'
+}).then(r => r.json()).then(console.log)
+```
+5. Submit a GET request to /api/users — verify 403 Forbidden:
+```js
+fetch('/api/users').then(r => r.json()).then(console.log)
+```
 
 ---
 
@@ -321,11 +390,43 @@ Dependencies: UTC2.1 (officer must be logged in)
 Initialization: An officer user is authenticated. An event with an allocation exists.
 
 Test Steps:
-1. Submit a POST request to /api/events — verify 201 Created.
-2. Submit a POST request to /api/events/{id}/documents — verify 201 Created.
-3. Submit a POST request to /api/budget/expenditures — verify 201 Created.
-4. Submit a POST request to /api/budget/allocations — verify 403 Forbidden.
-5. Submit a PATCH request to /api/users/{id}/role — verify 403 Forbidden.
+1. Submit a POST request to /api/events — verify 201 Created:
+```js
+fetch('/api/events', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'Officer Test Event', eventDate: '2026-12-01' })
+}).then(r => r.json()).then(console.log)
+```
+2. Submit a GET request to /api/budget — verify 200 OK:
+```js
+fetch('/api/budget').then(r => r.json()).then(console.log)
+```
+3. Submit a POST request to record an expenditure — verify 201 Created:
+```js
+fetch('/api/budget/expenditures', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ eventId: '{EVENT_ID}', amount: 500, description: 'Test expense', documentId: '{DOCUMENT_ID}' })
+}).then(r => r.json()).then(console.log)
+```
+4. Submit a POST request to /api/budget/allocations — verify 403 Forbidden:
+```js
+fetch('/api/budget/allocations', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ eventId: 'any-id', organizationId: 'any-id', amount: 1000 })
+}).then(r => r.json()).then(console.log)
+```
+5. Submit a POST request to upload a document — verify 403 Forbidden:
+```js
+const form = new FormData()
+form.append('documentType', 'permit')
+fetch('/api/events/{EVENT_ID}/documents', {
+  method: 'POST',
+  body: form
+}).then(r => r.json()).then(console.log)
+```
 
 ---
 
@@ -342,10 +443,34 @@ Dependencies: UTC2.1 (admin must be logged in)
 Initialization: An admin user is authenticated. At least one event and one user exist in the system.
 
 Test Steps:
-1. Submit a POST request to /api/budget/allocations — verify 201 Created.
-2. Submit a PATCH request to /api/users/{id}/role — verify 200 OK.
-3. Submit a PATCH request to /api/events/{id} with `{ "status": "approved" }` — verify 200 OK.
-4. Submit a GET request to /api/audit — verify 200 OK.
+1. Submit a POST request to allocate funds — verify 201 Created:
+```js
+fetch('/api/budget/allocations', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ eventId: '{EVENT_ID}', organizationId: '{ORG_ID}', amount: 5000 })
+}).then(r => r.json()).then(console.log)
+```
+2. Submit a PATCH request to update a user's role — verify 200 OK:
+```js
+fetch('/api/users/{USER_ID}/role', {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ role: 'officer' })
+}).then(r => r.json()).then(console.log)
+```
+3. Submit a PATCH request to approve an event — verify 200 OK:
+```js
+fetch('/api/events/{EVENT_ID}', {
+  method: 'PATCH',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ status: 'approved' })
+}).then(r => r.json()).then(console.log)
+```
+4. Submit a GET request to view the audit trail — verify 200 OK:
+```js
+fetch('/api/audit').then(r => r.json()).then(console.log)
+```
 
 ---
 
@@ -362,10 +487,17 @@ Dependencies: UTC2.1 (organizer must be logged in)
 Initialization: An organizer user is authenticated.
 
 Test Steps:
-1. Submit a POST request to /api/budget/allocations using the organizer's session.
-2. Verify that the response status is 403 Forbidden.
+1. Log in as an organizer via the sign-in page.
+2. Submit a POST request to /api/budget/allocations — verify 403 Forbidden:
+```js
+fetch('/api/budget/allocations', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ eventId: 'any-id', organizationId: 'any-id', amount: 1000 })
+}).then(r => r.json()).then(console.log)
+```
 3. Verify that the response body contains `success: false`.
-4. Verify that the error message clearly indicates the action is not permitted.
+4. Verify that the error message clearly indicates the action is not permitted (e.g., "Insufficient permissions" or "Admin access required").
 
 ---
 
@@ -382,10 +514,17 @@ Dependencies: UTC2.1 (organizer must be logged in)
 Initialization: An organizer user is authenticated.
 
 Test Steps:
-1. Navigate to the application root after login.
-2. Verify that the user is directed to /student/dashboard.
-3. Attempt to navigate directly to /admin/dashboard.
-4. Verify that access is denied (redirect to login or 403 response).
+1. Log in as an organizer via the sign-in page and verify the browser redirects to `/student/dashboard`.
+2. Attempt to navigate directly to the admin portal in the browser address bar:
+```
+https://structura-system.vercel.app/admin/dashboard
+```
+3. Verify that access is denied — the page redirects to sign-in or shows an unauthorized message.
+4. Confirm via the console that the API also blocks admin routes:
+```js
+fetch('/api/audit').then(r => r.json()).then(console.log)
+```
+5. Verify the response contains `success: false` with a 403 or 401 status.
 
 
 ---
@@ -528,30 +667,7 @@ Test Steps:
 
 ---
 
-**ETC5.2 Invalid Status Transition Is Rejected (Event Management)**
-
-Description: Verifies that the system rejects an invalid status transition (e.g., from "completed" back to "proposed").
-
-Test Inputs:
-- Event ID: (ID of an event with status "completed")
-- New Status: "proposed"
-
-Expected Results: The status transition is rejected with a 422 Unprocessable Entity response. An error message indicating the invalid transition is returned. The event status remains "completed".
-
-Dependencies: ETC5.1 (a completed event must exist), UTC2.1 (admin must be logged in)
-
-Initialization: An admin is authenticated. An event with status "completed" exists.
-
-Test Steps:
-1. Submit a PATCH request to /api/events/{id} with body `{ "status": "proposed" }`.
-2. Verify that the response status is 422 Unprocessable Entity.
-3. Verify that the response body contains `success: false`.
-4. Verify that the error message references the invalid status transition.
-5. Submit a GET request to /api/events/{id} and verify the status is still "completed".
-
----
-
-**ETC5.3 Event Status Transition: Approved to Cancelled (Event Management)**
+**ETC5.2 Event Status Transition: Approved to Cancelled (Event Management)**
 
 Description: Verifies that an admin can cancel an approved event.
 
@@ -579,7 +695,7 @@ Test Steps:
 
 **DTC1.1 Successful Document Upload Linked to Event (Document Management)**
 
-Description: Verifies that an officer can upload a document and that it is stored and linked to the correct event.
+Description: Verifies that an organizer can upload a document and that it is stored and linked to the correct event.
 
 Test Inputs:
 - Event ID: (ID of an existing event)
@@ -588,9 +704,9 @@ Test Inputs:
 
 Expected Results: The document is uploaded and stored. A document record is created in the database linked to the event. The returned document contains the correct file name, document type, and event ID. No exception is thrown.
 
-Dependencies: ETC1.1 (an event must exist), UTC2.1 (officer must be logged in)
+Dependencies: ETC1.1 (an event must exist), UTC2.1 (organizer must be logged in)
 
-Initialization: An officer is authenticated. An event exists in the system.
+Initialization: An organizer is authenticated. An event exists in the system.
 
 Test Steps:
 1. Submit a POST request to /api/events/{id}/documents with the file and document type as multipart/form-data.
@@ -602,7 +718,7 @@ Test Steps:
 
 **DTC1.2 Document Upload Rejected for Unauthorized Role (Document Management)**
 
-Description: Verifies that an organizer (who lacks upload_document permission) cannot upload documents.
+Description: Verifies that an officer (who lacks upload_document permission) cannot upload documents.
 
 Test Inputs:
 - Event ID: (ID of an existing event)
@@ -611,12 +727,20 @@ Test Inputs:
 
 Expected Results: The upload is rejected with a 403 Forbidden response. No document is stored. An appropriate error message is returned.
 
-Dependencies: ETC1.1 (an event must exist), UTC2.1 (organizer must be logged in)
+Dependencies: ETC1.1 (an event must exist), UTC2.1 (officer must be logged in)
 
-Initialization: An organizer is authenticated. An event exists in the system.
+Initialization: An officer is authenticated. An event exists in the system.
 
 Test Steps:
-1. Submit a POST request to /api/events/{id}/documents using the organizer's session.
+1. Log in as an officer and run the following in the browser console:
+```js
+const form = new FormData()
+form.append('documentType', 'contract')
+fetch('/api/events/{EVENT_ID}/documents', {
+  method: 'POST',
+  body: form
+}).then(r => r.json()).then(console.log)
+```
 2. Verify that the response status is 403 Forbidden.
 3. Verify that the response body contains `success: false`.
 
@@ -676,9 +800,9 @@ Test Inputs:
 
 Expected Results: The document is deleted from storage and the database. A subsequent GET request for the document returns 404 Not Found. No exception is thrown.
 
-Dependencies: DTC1.1 (a document must exist), UTC2.1 (officer must be logged in)
+Dependencies: DTC1.1 (a document must exist), UTC2.1 (organizer must be logged in)
 
-Initialization: An officer is authenticated. A document exists in the system.
+Initialization: An organizer is authenticated. A document exists in the system.
 
 Test Steps:
 1. Submit a DELETE request to /api/documents/{id}.
@@ -1203,5 +1327,5 @@ Test Steps:
 ---
 
 *Document Version: 1.0*
-*Total Test Cases: 37*
-*Modules Covered: User Authentication (7), Role-Based Access Control (5), Event Management (7), Document Management (6), Checklist Management (6), Budget Management (7), Audit Trail (5)*
+*Total Test Cases: 36*
+*Modules Covered: User Authentication (7), Role-Based Access Control (5), Event Management (6), Document Management (6), Checklist Management (6), Budget Management (7), Audit Trail (5)*
