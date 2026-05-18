@@ -29,11 +29,13 @@ const PERMISSIONS: Record<Role, Action[]> = {
   organizer: [
     'create_event',
     'update_event',
+    'delete_event',
     'upload_document',
     'delete_document',
     'create_checklist',
     'update_checklist',
     'view_budget',
+    'record_expenditure',
   ],
   officer: [
     'create_event',

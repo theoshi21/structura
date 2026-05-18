@@ -337,7 +337,7 @@ Description: Verifies that an organizer can perform permitted actions and is den
 
 Test Inputs: Organizer user session
 
-Expected Results: The organizer can create events and view the budget. The organizer cannot allocate funds, delete events, or manage users. Denied actions return 403 Forbidden.
+Expected Results: The organizer can create events, delete events, upload documents, and record expenditures. The organizer cannot allocate funds, approve events, or manage users. Denied actions return 403 Forbidden.
 
 Dependencies: UTC2.1 (organizer must be logged in)
 
@@ -364,15 +364,13 @@ fetch('/api/budget/allocations', {
   body: JSON.stringify({ eventId: 'any-id', organizationId: 'any-id', amount: 1000 })
 }).then(r => r.json()).then(console.log)
 ```
-4. Submit a DELETE request to /api/events/{id} — verify 403 Forbidden (use the event ID from step 1):
-```js
-fetch('/api/events/{EVENT_ID}', {
-  method: 'DELETE'
-}).then(r => r.json()).then(console.log)
-```
-5. Submit a GET request to /api/users — verify 403 Forbidden:
+4. Submit a GET request to /api/users — verify 403 Forbidden:
 ```js
 fetch('/api/users').then(r => r.json()).then(console.log)
+```
+5. Submit a GET request to /api/audit — verify 403 Forbidden:
+```js
+fetch('/api/audit').then(r => r.json()).then(console.log)
 ```
 
 ---
@@ -634,9 +632,9 @@ Test Inputs:
 
 Expected Results: The event is deleted. A subsequent GET request for the same event returns 404 Not Found. Associated documents and checklists are also removed. No exception is thrown.
 
-Dependencies: ETC1.1 (an event must exist), UTC2.1 (officer or admin must be logged in)
+Dependencies: ETC1.1 (an event must exist), UTC2.1 (organizer or admin must be logged in)
 
-Initialization: An officer or admin is authenticated. An event exists in the system.
+Initialization: An organizer or admin is authenticated. An event exists in the system.
 
 Test Steps:
 1. Submit a DELETE request to /api/events/{id}.
