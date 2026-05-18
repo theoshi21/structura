@@ -78,6 +78,7 @@ export interface Event {
   eventDate: Date
   location: string | null
   status: EventStatus
+  organizationId: string | null
   createdBy: string | null
   createdAt: Date
   updatedAt: Date
@@ -110,6 +111,7 @@ export interface UpdateEventInput {
 export interface EventFilters {
   status?: EventStatus
   createdBy?: string
+  organizationId?: string
   dateFrom?: Date
   dateTo?: Date
 }

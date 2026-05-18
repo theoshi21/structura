@@ -24,6 +24,7 @@ function mapEvent(row: Record<string, unknown>): Event {
     eventDate: new Date(row.event_date as string),
     location: (row.location as string) ?? null,
     status: row.status as EventStatus,
+    organizationId: (row.organization_id as string) ?? null,
     createdBy: (row.created_by as string) ?? null,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
@@ -44,10 +45,11 @@ export function canTransition(from: EventStatus, to: EventStatus): boolean {
  * Creates a new event proposal with status "proposed"
  * @param data - Event creation input (name, description, eventDate, location)
  * @param userId - ID of the user creating the event
+ * @param organizationId - ID of the organization this event belongs to
  * @returns Promise resolving to the created event
  * @throws Error if required fields are missing or DB insert fails
  */
-export async function createEvent(data: CreateEventInput, userId: string): Promise<Event> {
+export async function createEvent(data: CreateEventInput, userId: string, organizationId?: string | null): Promise<Event> {
   if (!data.name || !data.eventDate) {
     throw new Error('Event name and date are required')
   }
@@ -69,8 +71,9 @@ export async function createEvent(data: CreateEventInput, userId: string): Promi
       location: data.location ?? null,
       status: 'proposed',
       created_by: userId,
+      organization_id: organizationId ?? null,
     })
-    .select('id, name, description, event_date, location, status, created_by, created_at, updated_at')
+    .select('id, name, description, event_date, location, status, organization_id, created_by, created_at, updated_at')
     .single()
 
   if (error) {
@@ -103,7 +106,7 @@ export async function getEventById(id: string): Promise<Event | null> {
 
   const { data: event, error } = await supabase
     .from('events')
-    .select('id, name, description, event_date, location, status, created_by, created_at, updated_at')
+    .select('id, name, description, event_date, location, status, organization_id, created_by, created_at, updated_at')
     .eq('id', id)
     .single()
 
@@ -147,7 +150,7 @@ export async function updateEvent(
     .from('events')
     .update(updates)
     .eq('id', id)
-    .select('id, name, description, event_date, location, status, created_by, created_at, updated_at')
+    .select('id, name, description, event_date, location, status, organization_id, created_by, created_at, updated_at')
     .single()
 
   if (error) {
@@ -204,7 +207,7 @@ export async function updateEventStatus(
     .from('events')
     .update({ status: newStatus, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select('id, name, description, event_date, location, status, created_by, created_at, updated_at')
+    .select('id, name, description, event_date, location, status, organization_id, created_by, created_at, updated_at')
     .single()
 
   if (error) {
@@ -247,7 +250,7 @@ export async function deleteEvent(id: string, userId: string): Promise<void> {
 }
 
 /**
- * Lists events with optional filters (status, createdBy, date range)
+ * Lists events with optional filters (status, createdBy, organizationId, date range)
  * @param filters - Optional filters to narrow results
  * @returns Promise resolving to an array of events
  */
@@ -256,7 +259,7 @@ export async function listEvents(filters?: EventFilters): Promise<Event[]> {
 
   let query = supabase
     .from('events')
-    .select('id, name, description, event_date, location, status, created_by, created_at, updated_at')
+    .select('id, name, description, event_date, location, status, organization_id, created_by, created_at, updated_at')
     .order('created_at', { ascending: false })
 
   if (filters?.status) {
@@ -265,6 +268,10 @@ export async function listEvents(filters?: EventFilters): Promise<Event[]> {
 
   if (filters?.createdBy) {
     query = query.eq('created_by', filters.createdBy)
+  }
+
+  if (filters?.organizationId) {
+    query = query.eq('organization_id', filters.organizationId)
   }
 
   if (filters?.dateFrom) {

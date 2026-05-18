@@ -5,11 +5,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { hasPermission } from '@/lib/roles'
 import { createEvent, listEvents } from '@/lib/events'
+import { listOrganizations } from '@/lib/organizations'
 import { EventFilters, EventStatus } from '@/types'
 
 /**
  * POST /api/events
- * Creates a new event proposal (organizer, officer, admin)
+ * Creates a new event proposal (organizer, officer, admin).
+ * Resolves the user's organization ID from their organization_name before saving.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -42,9 +44,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Resolve the user's organization ID from their stored organization_name
+    let organizationId: string | null = null
+    if (user.organizationName) {
+      const orgs = await listOrganizations()
+      const match = orgs.find((o) => o.name === user.organizationName)
+      organizationId = match?.id ?? null
+    }
+
     const event = await createEvent(
       { name, description, eventDate: new Date(eventDate), location },
-      user.id
+      user.id,
+      organizationId
     )
 
     return NextResponse.json({ success: true, data: event }, { status: 201 })
@@ -55,11 +66,12 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/events
- * Lists events; supports ?status=, ?createdBy=, ?dateFrom=, ?dateTo= filters
+ * Lists events. For organizers and officers, scopes results to their organization.
+ * Admins see all events. Supports ?status=, ?dateFrom=, ?dateTo= filters.
  */
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth()
+    const user = await requireAuth()
 
     const params = request.nextUrl.searchParams
     const filters: EventFilters = {}
@@ -76,14 +88,18 @@ export async function GET(request: NextRequest) {
       filters.status = status
     }
 
-    const createdBy = params.get('createdBy')
-    if (createdBy) filters.createdBy = createdBy
-
     const dateFrom = params.get('dateFrom')
     if (dateFrom) filters.dateFrom = new Date(dateFrom)
 
     const dateTo = params.get('dateTo')
     if (dateTo) filters.dateTo = new Date(dateTo)
+
+    // Admins see all events; organizers and officers only see their org's events
+    if (user.role !== 'admin' && user.organizationName) {
+      const orgs = await listOrganizations()
+      const match = orgs.find((o) => o.name === user.organizationName)
+      if (match) filters.organizationId = match.id
+    }
 
     const events = await listEvents(filters)
 
