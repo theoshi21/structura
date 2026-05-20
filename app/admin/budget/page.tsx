@@ -71,14 +71,14 @@ export default function AdminBudgetPage() {
   const [removingAlloc, setRemovingAlloc] = useState<Allocation | null>(null)
   const [removing, setRemoving] = useState(false)
 
-  /** Fetches all orgs, their budget summaries, allocations, and approved events */
+  /** Fetches all orgs, their budget summaries, allocations, and events */
   async function fetchData() {
     setLoading(true)
     try {
       const [orgsRes, allocRes, eventsRes] = await Promise.all([
         fetch('/api/organizations'),
         fetch('/api/budget/allocations'),
-        fetch('/api/events?status=approved'),
+        fetch('/api/events'),
       ])
       const [orgsJson, allocJson, eventsJson] = await Promise.all([
         orgsRes.json(), allocRes.json(), eventsRes.json(),
@@ -236,10 +236,9 @@ export default function AdminBudgetPage() {
   const eventNameMap = new Map(events.map((e) => [e.id, e.name]))
   const allocatedEventIds = new Set(allocations.map((a) => a.eventId))
 
-  /** Events approved and not yet allocated, scoped to a specific org */
+  /** Events not yet allocated, scoped to a specific org */
   function unallocatedEventsForOrg(orgId: string) {
-    // We don't have org on events yet in the UI — show all unallocated approved events
-    return events.filter((e) => !allocatedEventIds.has(e.id))
+    return events.filter((e) => e.organizationId === orgId && !allocatedEventIds.has(e.id))
   }
 
   return (

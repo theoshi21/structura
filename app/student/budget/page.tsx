@@ -207,8 +207,8 @@ export default function StudentBudgetPage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          disabled={allocatedEvents.length === 0}
-          title={allocatedEvents.length === 0 ? 'No events with allocations yet' : undefined}
+          disabled={loading || allocatedEvents.length === 0}
+          title={!loading && allocatedEvents.length === 0 ? 'No events with budget allocations yet' : undefined}
           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <span className="text-base leading-none">+</span>
@@ -305,11 +305,11 @@ export default function StudentBudgetPage() {
                     </tr>
                   ) : (
                     expenditures.map((exp) => {
-                      const ev = events.find((e) => e.id === exp.eventId)
+                      const eventName = events.find((e) => e.id === exp.eventId)?.name ?? exp.eventId
                       return (
                         <tr key={exp.id} className="border-b border-light-gray/20 last:border-0 hover:bg-surface-raised transition-colors">
                           <td className="px-5 py-3.5 text-off-white font-medium">{exp.description}</td>
-                          <td className="px-5 py-3.5 text-mid-gray">{ev?.name ?? exp.eventId}</td>
+                          <td className="px-5 py-3.5 text-mid-gray">{eventName}</td>
                           <td className="px-5 py-3.5 text-mid-gray">{formatDate(exp.recordedAt)}</td>
                           <td className="px-5 py-3.5 text-off-white font-semibold">{formatPeso(exp.amount)}</td>
                           <td className="px-5 py-3.5">

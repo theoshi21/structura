@@ -4,11 +4,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { hasPermission } from '@/lib/roles'
-import { listAllExpenditures, recordExpenditure } from '@/lib/budget'
+import { listAllExpenditures, getOrgExpenditures, recordExpenditure } from '@/lib/budget'
 
 /**
  * GET /api/budget/expenditures
- * Returns all expenditures across all events.
+ * Returns expenditures scoped to the user's organization.
+ * Admins receive all expenditures across all events.
  */
 export async function GET() {
   try {
@@ -21,7 +22,14 @@ export async function GET() {
       )
     }
 
-    const expenditures = await listAllExpenditures()
+    // Admins see all expenditures; organizers and officers only see their org's
+    const expenditures =
+      user.role === 'admin'
+        ? await listAllExpenditures()
+        : user.organizationId
+          ? await getOrgExpenditures(user.organizationId)
+          : []
+
     return NextResponse.json({ success: true, data: expenditures })
   } catch (error) {
     return handleError(error)
