@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import FilterTabs from '@/components/FilterTabs'
 import Badge from '@/components/Badge'
 import Button from '@/components/Button'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { Document, DocumentType } from '@/types'
 
@@ -73,6 +74,10 @@ export default function StudentDocumentsPage() {
   const [selectedDocType, setSelectedDocType] = useState<DocumentType>('permit')
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
   const [events, setEvents] = useState<{ id: string; name: string }[]>([])
+
+  // Delete confirmation
+  const [deletingDoc, setDeletingDoc] = useState<Document | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -171,6 +176,24 @@ export default function StudentDocumentsPage() {
       }
     } catch {
       toast.error('Failed to open document.')
+    }
+  }
+
+  /** Sends the DELETE request and refreshes the list on success */
+  async function handleDeleteDoc() {
+    if (!deletingDoc) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/documents/${deletingDoc.id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error?.message ?? 'Failed to delete document')
+      toast.success(`"${deletingDoc.fileName}" deleted.`)
+      setDeletingDoc(null)
+      await fetchDocuments()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete document')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -346,12 +369,20 @@ export default function StudentDocumentsPage() {
                   <td className="px-5 py-3.5 text-mid-gray">{formatSize(doc.fileSize)}</td>
                   <td className="px-5 py-3.5 text-mid-gray">{formatDate(doc.uploadedAt)}</td>
                   <td className="px-5 py-3.5">
-                    <button
-                      className="text-accent hover:underline font-medium"
-                      onClick={() => handleView(doc.id)}
-                    >
-                      View
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        className="text-accent hover:underline font-medium"
+                        onClick={() => handleView(doc.id)}
+                      >
+                        View
+                      </button>
+                      <button
+                        className="text-red-400 hover:underline font-medium"
+                        onClick={() => setDeletingDoc(doc)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -359,6 +390,19 @@ export default function StudentDocumentsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Delete confirmation */}
+      {deletingDoc && (
+        <ConfirmDialog
+          title="Delete Document?"
+          message={`"${deletingDoc.fileName}" will be permanently deleted from storage. This cannot be undone.`}
+          confirmLabel="Delete"
+          destructive
+          loading={deleting}
+          onConfirm={handleDeleteDoc}
+          onCancel={() => setDeletingDoc(null)}
+        />
+      )}
     </div>
   )
 }

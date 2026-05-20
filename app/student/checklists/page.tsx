@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Button from '@/components/Button'
 import ProgressBar from '@/components/ProgressBar'
 import Badge from '@/components/Badge'
-import { Checklist, ChecklistItem } from '@/types'
+import { Checklist, ChecklistItem, ChecklistTemplate } from '@/types'
 
 /** Formats a completion count as "X/Y done" */
 function doneLabel(items: ChecklistItem[]): string {
@@ -30,14 +30,23 @@ interface ChecklistCardProps {
   checklist: Checklist
   eventName: string
   onToggle: (itemId: string) => Promise<void>
+  onAddItem: (checklistId: string, description: string) => Promise<void>
+  onRemoveItem: (itemId: string) => Promise<void>
 }
 
 /**
  * Populated checklist card showing event name, progress badge, progress bar, and items.
+ * Supports adding new items inline and removing existing ones.
  */
-function ChecklistCard({ checklist, eventName, onToggle }: ChecklistCardProps) {
+function ChecklistCard({ checklist, eventName, onToggle, onAddItem, onRemoveItem }: ChecklistCardProps) {
   const [items, setItems] = useState<ChecklistItem[]>(checklist.items)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+
+  // Add item inline state
+  const [showAddInput, setShowAddInput] = useState(false)
+  const [newItemText, setNewItemText] = useState('')
+  const [addingItem, setAddingItem] = useState(false)
 
   const percent = completionPercent(items)
 
@@ -46,20 +55,42 @@ function ChecklistCard({ checklist, eventName, onToggle }: ChecklistCardProps) {
     setTogglingId(itemId)
     try {
       await onToggle(itemId)
-      // Optimistically update local state
       setItems((prev) =>
         prev.map((item) =>
           item.id === itemId
-            ? {
-                ...item,
-                isCompleted: !item.isCompleted,
-                completedAt: !item.isCompleted ? new Date() : null,
-              }
+            ? { ...item, isCompleted: !item.isCompleted, completedAt: !item.isCompleted ? new Date() : null }
             : item
         )
       )
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  /** Removes an item from the checklist via the API */
+  async function handleRemove(itemId: string) {
+    setRemovingId(itemId)
+    try {
+      await onRemoveItem(itemId)
+      setItems((prev) => prev.filter((item) => item.id !== itemId))
+    } finally {
+      setRemovingId(null)
+    }
+  }
+
+  /** Adds a new item to the checklist via the API */
+  async function handleAddItem(e: React.FormEvent) {
+    e.preventDefault()
+    const desc = newItemText.trim()
+    if (!desc) return
+    setAddingItem(true)
+    try {
+      await onAddItem(checklist.id, desc)
+      setNewItemText('')
+      setShowAddInput(false)
+      // onAddItem triggers a parent re-fetch; the card will re-mount with real IDs
+    } finally {
+      setAddingItem(false)
     }
   }
 
@@ -77,7 +108,7 @@ function ChecklistCard({ checklist, eventName, onToggle }: ChecklistCardProps) {
       {/* Checklist items */}
       <ul className="flex flex-col gap-2">
         {items.map((item) => (
-          <li key={item.id} className="flex items-center gap-2.5">
+          <li key={item.id} className="flex items-center gap-2.5 group">
             <button
               type="button"
               disabled={togglingId === item.id}
@@ -92,14 +123,58 @@ function ChecklistCard({ checklist, eventName, onToggle }: ChecklistCardProps) {
             >
               {item.isCompleted ? '✓' : ''}
             </button>
-            <span
-              className={`text-sm font-body ${item.isCompleted ? 'line-through text-mid-gray' : 'text-off-white'}`}
-            >
+            <span className={`flex-1 text-sm font-body ${item.isCompleted ? 'line-through text-mid-gray' : 'text-off-white'}`}>
               {item.description}
             </span>
+            {/* Remove button — visible on hover */}
+            <button
+              type="button"
+              disabled={removingId === item.id}
+              onClick={() => handleRemove(item.id)}
+              aria-label={`Remove: ${item.description}`}
+              className="opacity-0 group-hover:opacity-100 text-mid-gray hover:text-red-400 text-xs transition-opacity disabled:opacity-30 flex-shrink-0"
+            >
+              ✕
+            </button>
           </li>
         ))}
       </ul>
+
+      {/* Add item inline form */}
+      {showAddInput ? (
+        <form onSubmit={handleAddItem} className="flex items-center gap-2 mt-1">
+          <input
+            type="text"
+            autoFocus
+            value={newItemText}
+            onChange={(e) => setNewItemText(e.target.value)}
+            placeholder="New item description…"
+            className="flex-1 bg-surface-raised border border-light-gray/30 rounded-lg px-3 py-1.5 text-sm text-off-white outline-none focus:ring-2 focus:ring-accent/50 transition"
+          />
+          <button
+            type="submit"
+            disabled={addingItem || !newItemText.trim()}
+            className="px-3 py-1.5 text-xs font-semibold bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            {addingItem ? '…' : 'Add'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowAddInput(false); setNewItemText('') }}
+            className="text-xs text-mid-gray hover:text-off-white transition-colors"
+          >
+            Cancel
+          </button>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowAddInput(true)}
+          className="self-start text-xs text-mid-gray hover:text-accent transition-colors font-body"
+        >
+          + Add item
+        </button>
+      )}
     </div>
   )
 }
@@ -123,41 +198,59 @@ interface NewChecklistModalProps {
 
 /**
  * Modal for creating a new checklist for an event.
- * Allows entering a comma-separated list of items.
+ * Supports two modes: apply a template, or enter custom items.
  */
 function NewChecklistModal({ events, onClose, onCreated }: NewChecklistModalProps) {
+  const [mode, setMode] = useState<'template' | 'custom'>('custom')
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id ?? '')
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([])
   const [itemsText, setItemsText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  /** Fetches available templates for the "From Template" mode */
+  useEffect(() => {
+    fetch('/api/checklists/templates')
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) {
+          setTemplates(json.data)
+          if (json.data.length > 0) setSelectedTemplateId(json.data[0].id)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   /** Submits the new checklist to the API */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!selectedEventId) {
-      setError('Please select an event.')
-      return
-    }
-
-    const items = itemsText
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
+    if (!selectedEventId) { setError('Please select an event.'); return }
 
     setSubmitting(true)
     setError(null)
 
     try {
-      const res = await fetch(`/api/events/${selectedEventId}/checklist`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
-      })
-      const json = await res.json()
+      let res: Response
 
-      if (!res.ok || !json.success) {
-        throw new Error(json.error?.message ?? 'Failed to create checklist')
+      if (mode === 'template') {
+        if (!selectedTemplateId) { setError('Please select a template.'); setSubmitting(false); return }
+        res = await fetch(`/api/events/${selectedEventId}/checklist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateId: selectedTemplateId }),
+        })
+      } else {
+        const items = itemsText.split('\n').map((s) => s.trim()).filter(Boolean)
+        res = await fetch(`/api/events/${selectedEventId}/checklist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items }),
+        })
       }
+
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error?.message ?? 'Failed to create checklist')
 
       onCreated()
       onClose()
@@ -194,31 +287,63 @@ function NewChecklistModal({ events, onClose, onCreated }: NewChecklistModalProp
             >
               {events.length === 0 && <option value="">No events available</option>}
               {events.map((ev) => (
-                <option key={ev.id} value={ev.id}>
-                  {ev.name}
-                </option>
+                <option key={ev.id} value={ev.id}>{ev.name}</option>
               ))}
             </select>
           </div>
 
-          {/* Items textarea */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="items-input" className="text-xs font-semibold text-mid-gray uppercase tracking-wide">
-              Checklist Items (one per line)
-            </label>
-            <textarea
-              id="items-input"
-              rows={6}
-              placeholder={"Secure venue booking\nSubmit event proposal\nFinalize program flow"}
-              className="rounded-lg border border-light-gray/50 px-3 py-2 text-sm font-body text-off-white bg-surface focus:outline-none focus:ring-2 focus:ring-accent resize-none"
-              value={itemsText}
-              onChange={(e) => setItemsText(e.target.value)}
-            />
+          {/* Mode toggle */}
+          <div className="flex gap-2 p-1 rounded-lg bg-surface-raised border border-light-gray/20">
+            {(['custom', 'template'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  mode === m ? 'bg-primary text-white' : 'text-mid-gray hover:text-off-white'
+                }`}
+              >
+                {m === 'custom' ? 'Custom Items' : 'From Template'}
+              </button>
+            ))}
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600">{error}</p>
+          {mode === 'template' ? (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-mid-gray uppercase tracking-wide">
+                Template
+              </label>
+              {templates.length === 0 ? (
+                <p className="text-sm text-mid-gray italic">No templates available. Ask your admin to create one.</p>
+              ) : (
+                <select
+                  className="rounded-lg border border-light-gray/50 px-3 py-2 text-sm font-body text-off-white bg-surface focus:outline-none focus:ring-2 focus:ring-accent"
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                >
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.items.length} items)</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="items-input" className="text-xs font-semibold text-mid-gray uppercase tracking-wide">
+                Checklist Items (one per line)
+              </label>
+              <textarea
+                id="items-input"
+                rows={6}
+                placeholder={"Secure venue booking\nSubmit event proposal\nFinalize program flow"}
+                className="rounded-lg border border-light-gray/50 px-3 py-2 text-sm font-body text-off-white bg-surface focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+                value={itemsText}
+                onChange={(e) => setItemsText(e.target.value)}
+              />
+            </div>
           )}
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
 
           <div className="flex gap-3 justify-end">
             <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={submitting}>
@@ -300,6 +425,30 @@ export default function StudentChecklistsPage() {
     }
   }
 
+  /** Calls the add item API for a checklist, then re-fetches to get the real item ID */
+  async function handleAddItem(checklistId: string, description: string) {
+    const res = await fetch(`/api/checklists/${checklistId}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+    })
+    const json = await res.json()
+    if (!res.ok || !json.success) {
+      throw new Error(json.error?.message ?? 'Failed to add item')
+    }
+    // Re-fetch so the card renders with the real UUID from the database
+    await fetchData()
+  }
+
+  /** Calls the remove item API for a checklist item */
+  async function handleRemoveItem(itemId: string) {
+    const res = await fetch(`/api/checklists/items/${itemId}`, { method: 'DELETE' })
+    const json = await res.json()
+    if (!res.ok || !json.success) {
+      throw new Error(json.error?.message ?? 'Failed to remove item')
+    }
+  }
+
   return (
     <div className="p-8 flex flex-col gap-6">
       {/* Top bar */}
@@ -328,6 +477,8 @@ export default function StudentChecklistsPage() {
               checklist={checklist}
               eventName={eventNames[checklist.eventId] ?? 'Unknown Event'}
               onToggle={handleToggle}
+              onAddItem={handleAddItem}
+              onRemoveItem={handleRemoveItem}
             />
           ))}
 

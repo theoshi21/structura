@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/admin/submissions', label: 'Submissions', icon: '📋' },
   { href: '/admin/users', label: 'Users', icon: '👥' },
   { href: '/admin/budget', label: 'Budget', icon: '💰' },
+  { href: '/admin/checklists', label: 'Checklists', icon: '✅' },
   { href: '/admin/audit', label: 'Audit Trail', icon: '🔍' },
 ]
 

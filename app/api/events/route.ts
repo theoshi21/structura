@@ -85,9 +85,15 @@ export async function GET(request: NextRequest) {
     const dateTo = params.get('dateTo')
     if (dateTo) filters.dateTo = new Date(dateTo)
 
-    // Admins see all events; organizers and officers only see their org's events
-    if (user.role !== 'admin' && user.organizationId) {
-      filters.organizationId = user.organizationId
+    // Admins see all events; organizers and officers only see their org's events.
+    // If a non-admin has an organizationId, scope by org.
+    // If they have no organizationId (legacy accounts), fall back to scoping by creator.
+    if (user.role !== 'admin') {
+      if (user.organizationId) {
+        filters.organizationId = user.organizationId
+      } else {
+        filters.createdBy = user.id
+      }
     }
 
     const events = await listEvents(filters)

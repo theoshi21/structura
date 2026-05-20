@@ -68,15 +68,31 @@ export async function GET(request: NextRequest) {
     }
 
     // Student/Officer → return their own org's budget
-    const org = await resolveUserOrg(user.organizationName)
-    if (!org) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NO_ORG', message: 'Your account is not linked to an organization. Contact your admin.' } },
-        { status: 404 }
-      )
+    // Prefer organizationId (direct FK) over name-based lookup for performance
+    let orgId = user.organizationId
+    let orgName = user.organizationName
+
+    if (!orgId) {
+      // Legacy account: fall back to name-based lookup
+      const org = await resolveUserOrg(user.organizationName)
+      if (!org) {
+        return NextResponse.json(
+          { success: false, error: { code: 'NO_ORG', message: 'Your account is not linked to an organization. Contact your admin.' } },
+          { status: 404 }
+        )
+      }
+      orgId = org.id
+      orgName = org.name
     }
 
-    const summary = await getOrgBudgetSummary(org.id, org.name)
+    if (!orgName) {
+      // orgId is set but name isn't — fetch it once
+      const supabase = createSupabaseClient()
+      const { data: org } = await supabase.from('organizations').select('name').eq('id', orgId).single()
+      orgName = org?.name ?? 'Unknown'
+    }
+
+    const summary = await getOrgBudgetSummary(orgId, orgName ?? 'Unknown')
     return NextResponse.json({ success: true, data: summary })
   } catch (error) {
     return handleError(error)

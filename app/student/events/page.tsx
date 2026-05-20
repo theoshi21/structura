@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import FilterTabs from '@/components/FilterTabs'
 import Badge from '@/components/Badge'
 import Pagination from '@/components/Pagination'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { realtimeService } from '@/lib/realtime'
 import type { Subscription } from '@/lib/realtime'
-import { Event, EventStatus } from '@/types'
+import { Event, EventStatus, Role } from '@/types'
 
 /** Number of events shown per page */
 const PAGE_SIZE = 10
@@ -246,6 +247,11 @@ export default function StudentEventsPage() {
   const [connected, setConnected] = useState(false)
   const [page, setPage] = useState(1)
   const [showModal, setShowModal] = useState(false)
+  const [userRole, setUserRole] = useState<Role | null>(null)
+
+  // Delete confirmation
+  const [deletingEvent, setDeletingEvent] = useState<Event | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   /** Fetches events from the API, optionally filtered by status */
   async function fetchEvents() {
@@ -276,6 +282,14 @@ export default function StudentEventsPage() {
     fetchEvents()
   }, [activeTab])
 
+  // Fetch the current user's role once on mount
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((json) => { if (json.success) setUserRole(json.data.role) })
+      .catch(() => {})
+  }, [])
+
   // Set up real-time subscription to the events table
   useEffect(() => {
     let subscription: Subscription | null = null
@@ -298,6 +312,24 @@ export default function StudentEventsPage() {
       }
     }
   }, [])
+
+  /** Sends the DELETE request and refreshes the list on success */
+  async function handleDeleteEvent() {
+    if (!deletingEvent) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/events/${deletingEvent.id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error?.message ?? 'Failed to delete event')
+      toast.success(`"${deletingEvent.name}" has been deleted.`)
+      setDeletingEvent(null)
+      await fetchEvents()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete event')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="p-8 flex flex-col gap-6">
@@ -378,12 +410,22 @@ export default function StudentEventsPage() {
                     />
                   </td>
                   <td className="px-5 py-3.5">
-                    <a
-                      href={`/student/events/${event.id}`}
-                      className="text-accent hover:underline font-medium"
-                    >
-                      View
-                    </a>
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={`/student/events/${event.id}`}
+                        className="text-accent hover:underline font-medium"
+                      >
+                        View
+                      </a>
+                      {event.status === 'proposed' && userRole === 'organizer' && (
+                        <button
+                          onClick={() => setDeletingEvent(event)}
+                          className="text-red-400 hover:underline font-medium"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -398,6 +440,19 @@ export default function StudentEventsPage() {
         totalPages={Math.ceil(events.length / PAGE_SIZE)}
         onChange={setPage}
       />
+
+      {/* Delete confirmation */}
+      {deletingEvent && (
+        <ConfirmDialog
+          title="Delete Event?"
+          message={`"${deletingEvent.name}" will be permanently deleted. This cannot be undone.`}
+          confirmLabel="Delete"
+          destructive
+          loading={deleting}
+          onConfirm={handleDeleteEvent}
+          onCancel={() => setDeletingEvent(null)}
+        />
+      )}
     </div>
   )
 }

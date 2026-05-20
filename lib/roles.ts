@@ -40,7 +40,6 @@ const PERMISSIONS: Record<Role, Action[]> = {
   officer: [
     'create_event',
     'update_event',
-    'delete_event',
     'create_checklist',
     'update_checklist',
     'view_budget',

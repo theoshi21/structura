@@ -6,7 +6,16 @@ import Badge from '@/components/Badge'
 import ProgressBar from '@/components/ProgressBar'
 import { realtimeService } from '@/lib/realtime'
 import type { Subscription } from '@/lib/realtime'
-import { Event, BudgetSummary } from '@/types'
+import { BudgetSummary, EventStatus } from '@/types'
+
+/** Slim event shape — only what the dashboard renders */
+interface DashboardEvent {
+  id: string
+  name: string
+  eventDate: string
+  status: EventStatus
+}
+
 /** Formats a number as Philippine Peso */
 function formatPeso(amount: number): string {
   return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
@@ -23,8 +32,8 @@ function statusColor(status: string): 'green' | 'amber' | 'blue' | 'red' | 'gray
   }
 }
 
-/** Formats a Date or ISO string to a readable date */
-function formatDate(date: Date | string): string {
+/** Formats a date string to a readable date */
+function formatDate(date: string): string {
   return new Date(date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -34,38 +43,32 @@ function formatDate(date: Date | string): string {
 
 /**
  * Student Dashboard page.
- * Shows a welcome heading, stat cards, a submissions table, and a budget overview panel.
+ * Uses a single /api/dashboard endpoint to fetch all data in one round trip.
  * Subscribes to real-time event and budget changes so stats refresh automatically.
  */
 export default function StudentDashboardPage() {
-  const [events, setEvents] = useState<Event[]>([])
+  const [orgName, setOrgName] = useState<string | null>(null)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [activeCount, setActiveCount] = useState(0)
+  const [recentEvents, setRecentEvents] = useState<DashboardEvent[]>([])
   const [summary, setSummary] = useState<BudgetSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [connected, setConnected] = useState(false)
-  const [orgName, setOrgName] = useState<string | null>(null)
 
-  /**
-   * Fetches events, budget summary, and current user in parallel.
-   * Consolidating into one function avoids multiple sequential waterfall fetches on mount.
-   */
+  /** Fetches all dashboard data in a single request */
   async function fetchData() {
     setLoading(true)
     try {
-      const [eventsRes, budgetRes, meRes] = await Promise.all([
-        fetch('/api/events'),
-        fetch('/api/budget'),
-        fetch('/api/auth/me'),
-      ])
-
-      const [eventsJson, budgetJson, meJson] = await Promise.all([
-        eventsRes.json(),
-        budgetRes.json(),
-        meRes.json(),
-      ])
-
-      if (eventsRes.ok && eventsJson.success) setEvents(eventsJson.data)
-      if (budgetRes.ok && budgetJson.success) setSummary(budgetJson.data)
-      if (meRes.ok && meJson.success) setOrgName(meJson.data.organizationName ?? null)
+      const res = await fetch('/api/dashboard')
+      const json = await res.json()
+      if (res.ok && json.success) {
+        const d = json.data
+        setOrgName(d.orgName ?? null)
+        setPendingCount(d.pendingCount)
+        setActiveCount(d.activeCount)
+        setRecentEvents(d.recentEvents)
+        setSummary(d.budget ?? null)
+      }
     } catch {
       // Dashboard is best-effort; silently ignore fetch errors
     } finally {
@@ -73,45 +76,23 @@ export default function StudentDashboardPage() {
     }
   }
 
-  // Single mount fetch — all data in parallel
   useEffect(() => { fetchData() }, [])
 
-  // Set up real-time subscriptions to events and budget tables
+  // Real-time subscriptions — re-fetch on any event or budget change
   useEffect(() => {
     const subscriptions: Subscription[] = []
 
-    /** Subscribes to events and budget tables and re-fetches on any change */
-    function setupSubscriptions() {
-      setConnected(false)
+    setConnected(false)
+    subscriptions.push(realtimeService.subscribeToEvents(() => fetchData()))
+    realtimeService.subscribeToBudget(() => fetchData()).forEach((s) => subscriptions.push(s))
+    setConnected(true)
 
-      // Subscribe to events table
-      subscriptions.push(
-        realtimeService.subscribeToEvents(() => { fetchData() })
-      )
-
-      // Subscribe to budget-related tables
-      const budgetSubs = realtimeService.subscribeToBudget(() => { fetchData() })
-      subscriptions.push(...budgetSubs)
-
-      setConnected(true)
-    }
-
-    setupSubscriptions()
-
-    return () => {
-      subscriptions.forEach((sub) => realtimeService.unsubscribe(sub))
-    }
+    return () => subscriptions.forEach((s) => realtimeService.unsubscribe(s))
   }, [])
 
-  // Derived stats
-  const pendingCount = events.filter((e) => e.status === 'proposed').length
-  const activeCount = events.filter((e) => e.status === 'approved').length
   const percentUsed = summary && summary.totalFunds > 0
     ? Math.round((summary.allocatedFunds / summary.totalFunds) * 100)
     : 0
-
-  // Show the 5 most recent events as "submissions"
-  const recentEvents = events.slice(0, 5)
 
   return (
     <div className="p-8 flex flex-col gap-8">
@@ -133,20 +114,19 @@ export default function StudentDashboardPage() {
 
       {/* Stat cards row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Organization card — shows the user's own org name */}
         <div className="flex flex-col gap-2 rounded-xl bg-dark-navy border border-light-gray/20 p-5">
           <span className="text-2xl">🏢</span>
           <span
             className="text-lg font-bold text-off-white font-body leading-tight truncate"
             title={orgName ?? 'No organization'}
           >
-            {orgName ?? '—'}
+            {loading ? '—' : (orgName ?? '—')}
           </span>
           <span className="text-sm text-mid-gray font-body">Your Organization</span>
         </div>
-        <StatCard icon="🕐" value={String(pendingCount)} label="Pending Reviews" />
-        <StatCard icon="💰" value={summary ? formatPeso(summary.totalFunds) : '—'} label="Total Fund" />
-        <StatCard icon="📅" value={String(activeCount)} label="Active Events" />
+        <StatCard icon="🕐" value={loading ? '—' : String(pendingCount)} label="Pending Reviews" />
+        <StatCard icon="💰" value={loading ? '—' : (summary ? formatPeso(summary.totalFunds) : '—')} label="Total Fund" />
+        <StatCard icon="📅" value={loading ? '—' : String(activeCount)} label="Active Events" />
       </div>
 
       {/* Bottom two-column layout */}
@@ -160,29 +140,19 @@ export default function StudentDashboardPage() {
             <table className="w-full text-sm font-body">
               <thead>
                 <tr className="border-b border-light-gray/30 bg-surface-raised">
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">
-                    Event
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">
-                    Date
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">
-                    Status
-                  </th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">Event</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">Date</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={3} className="px-5 py-8 text-center text-mid-gray">
-                      Loading…
-                    </td>
+                    <td colSpan={3} className="px-5 py-8 text-center text-mid-gray">Loading…</td>
                   </tr>
                 ) : recentEvents.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-5 py-8 text-center text-mid-gray">
-                      No events yet.
-                    </td>
+                    <td colSpan={3} className="px-5 py-8 text-center text-mid-gray">No events yet.</td>
                   </tr>
                 ) : (
                   recentEvents.map((event) => (
@@ -212,13 +182,14 @@ export default function StudentDashboardPage() {
             Budget Overview
           </span>
           <div className="rounded-xl border border-light-gray/30 bg-surface p-5 flex flex-col gap-4">
-            {!summary ? (
+            {loading ? (
+              <p className="text-sm text-mid-gray italic">Loading…</p>
+            ) : !summary ? (
               <p className="text-sm text-mid-gray italic">
                 No budget has been set for your organization yet. Contact your admin.
               </p>
             ) : (
               <>
-                {/* Budget rows */}
                 <div className="flex flex-col gap-3">
                   {[
                     { label: 'Allocated', value: formatPeso(summary.allocatedFunds) },
@@ -231,7 +202,6 @@ export default function StudentDashboardPage() {
                     </div>
                   ))}
                 </div>
-                {/* Progress bar */}
                 <div className="flex flex-col gap-1.5">
                   <ProgressBar percent={percentUsed} />
                   <span className="text-xs text-mid-gray font-body">{percentUsed}% of the budget allocated</span>
