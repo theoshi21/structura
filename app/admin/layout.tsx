@@ -4,22 +4,32 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Logo from '@/components/Logo'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faChartBar,
+  faClipboardList,
+  faUsers,
+  faCoins,
+  faListCheck,
+  faMagnifyingGlass,
+} from '@fortawesome/free-solid-svg-icons'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
 /** Navigation links for the admin sidebar */
-const navLinks = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/submissions', label: 'Submissions', icon: '📋' },
-  { href: '/admin/users', label: 'Users', icon: '👥' },
-  { href: '/admin/budget', label: 'Budget', icon: '💰' },
-  { href: '/admin/checklists', label: 'Checklists', icon: '✅' },
-  { href: '/admin/audit', label: 'Audit Trail', icon: '🔍' },
+const navLinks: { href: string; label: string; icon: IconDefinition }[] = [
+  { href: '/admin/dashboard', label: 'Dashboard', icon: faChartBar },
+  { href: '/admin/submissions', label: 'Submissions', icon: faClipboardList },
+  { href: '/admin/users', label: 'Users', icon: faUsers },
+  { href: '/admin/budget', label: 'Budget', icon: faCoins },
+  { href: '/admin/checklists', label: 'Checklists', icon: faListCheck },
+  { href: '/admin/audit', label: 'Audit Trail', icon: faMagnifyingGlass },
 ]
 
 /**
  * Individual sidebar nav link with active state highlight.
  * Uses usePathname to determine if the link is currently active.
  */
-function NavLink({ href, label, icon }: { href: string; label: string; icon: string }) {
+function NavLink({ href, label, icon }: { href: string; label: string; icon: IconDefinition }) {
   const pathname = usePathname()
   const isActive = pathname === href || pathname.startsWith(href + '/')
 
@@ -35,7 +45,7 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon: str
         }
       `}
     >
-      <span className="text-base" aria-hidden="true">{icon}</span>
+      <FontAwesomeIcon icon={icon} className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
       {label}
     </Link>
   )

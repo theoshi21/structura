@@ -7,6 +7,8 @@ import Button from '@/components/Button'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { useToast } from '@/components/Toast'
 import { Document, DocumentType } from '@/types'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFolderOpen, faSpinner } from '@fortawesome/free-solid-svg-icons'
 
 /** Tab definitions for document type filter */
 const tabs = [
@@ -305,9 +307,11 @@ export default function StudentDocumentsPage() {
         onClick={() => fileInputRef.current?.click()}
         onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
       >
-        <span className="text-4xl" aria-hidden="true">
-          {uploading ? '⏳' : '📁'}
-        </span>
+        <FontAwesomeIcon
+          icon={uploading ? faSpinner : faFolderOpen}
+          className={`text-4xl w-10 h-10 text-mid-gray ${uploading ? 'animate-spin' : ''}`}
+          aria-hidden="true"
+        />
         <p className="font-body font-semibold text-off-white text-sm">
           {uploading
             ? 'Uploading…'

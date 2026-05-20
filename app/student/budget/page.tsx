@@ -8,6 +8,12 @@ import { useToast } from '@/components/Toast'
 import { realtimeService } from '@/lib/realtime'
 import type { Subscription } from '@/lib/realtime'
 import { Expenditure, Event, Document } from '@/types'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faLandmark,
+  faArrowUpFromBracket,
+  faCircleCheck,
+} from '@fortawesome/free-solid-svg-icons'
 
 interface OrgSummary {
   organizationId: string
@@ -235,9 +241,9 @@ export default function StudentBudgetPage() {
             <span className="text-xs font-semibold uppercase tracking-wide text-mid-gray">{summary.organizationName}</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard icon="🏛️" value={formatPeso(summary.totalFunds)} label="Total Budget" />
-            <StatCard icon="📤" value={formatPeso(summary.allocatedFunds)} label="Allocated to Events" />
-            <StatCard icon="💚" value={formatPeso(summary.availableFunds)} label="Unallocated" />
+            <StatCard icon={faLandmark} value={formatPeso(summary.totalFunds)} label="Total Budget" />
+            <StatCard icon={faArrowUpFromBracket} value={formatPeso(summary.allocatedFunds)} label="Allocated to Events" />
+            <StatCard icon={faCircleCheck} value={formatPeso(summary.availableFunds)} label="Unallocated" />
           </div>
 
           <div className="flex flex-col gap-2">

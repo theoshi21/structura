@@ -7,6 +7,13 @@ import ProgressBar from '@/components/ProgressBar'
 import { realtimeService } from '@/lib/realtime'
 import type { Subscription } from '@/lib/realtime'
 import { BudgetSummary, EventStatus } from '@/types'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faBuilding,
+  faClock,
+  faCoins,
+  faCalendarDays,
+} from '@fortawesome/free-solid-svg-icons'
 
 /** Slim event shape — only what the dashboard renders */
 interface DashboardEvent {
@@ -115,7 +122,7 @@ export default function StudentDashboardPage() {
       {/* Stat cards row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="flex flex-col gap-2 rounded-xl bg-dark-navy border border-light-gray/20 p-5">
-          <span className="text-2xl">🏢</span>
+          <FontAwesomeIcon icon={faBuilding} className="w-6 h-6 text-mid-gray" />
           <span
             className="text-lg font-bold text-off-white font-body leading-tight truncate"
             title={orgName ?? 'No organization'}
@@ -124,9 +131,9 @@ export default function StudentDashboardPage() {
           </span>
           <span className="text-sm text-mid-gray font-body">Your Organization</span>
         </div>
-        <StatCard icon="🕐" value={loading ? '—' : String(pendingCount)} label="Pending Reviews" />
-        <StatCard icon="💰" value={loading ? '—' : (summary ? formatPeso(summary.totalFunds) : '—')} label="Total Fund" />
-        <StatCard icon="📅" value={loading ? '—' : String(activeCount)} label="Active Events" />
+        <StatCard icon={faClock} value={loading ? '—' : String(pendingCount)} label="Pending Reviews" />
+        <StatCard icon={faCoins} value={loading ? '—' : (summary ? formatPeso(summary.totalFunds) : '—')} label="Total Fund" />
+        <StatCard icon={faCalendarDays} value={loading ? '—' : String(activeCount)} label="Active Events" />
       </div>
 
       {/* Bottom two-column layout */}

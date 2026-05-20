@@ -1,12 +1,15 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
+
 interface StatCardProps {
-  icon: string
+  icon: IconDefinition
   value: string | number
   label: string
   className?: string
 }
 
 /**
- * Stat card displaying an emoji icon, a large numeric value, and a descriptive label.
+ * Stat card displaying a Font Awesome icon, a large numeric value, and a descriptive label.
  * Used on dashboard pages for key metrics.
  */
 export default function StatCard({ icon, value, label, className = '' }: StatCardProps) {
@@ -17,7 +20,7 @@ export default function StatCard({ icon, value, label, className = '' }: StatCar
         ${className}
       `}
     >
-      <span className="text-2xl">{icon}</span>
+      <FontAwesomeIcon icon={icon} className="text-2xl w-6 h-6 text-mid-gray" />
       <span className="text-2xl font-bold text-off-white font-body">{value}</span>
       <span className="text-sm text-mid-gray font-body">{label}</span>
     </div>

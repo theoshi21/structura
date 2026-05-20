@@ -3,16 +3,27 @@ import Logo from '@/components/Logo'
 import Button from '@/components/Button'
 import Card from '@/components/Card'
 import Badge from '@/components/Badge'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faCalendarDays,
+  faFileLines,
+  faListCheck,
+  faCoins,
+  faUsers,
+  faChartBar,
+  faBolt,
+} from '@fortawesome/free-solid-svg-icons'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
 /** Feature card data for the Features section */
-const features = [
-  { emoji: '📅', title: 'Event Management', description: 'Plan and track events from proposal to completion.' },
-  { emoji: '📄', title: 'Document Storage', description: 'Centralize permits, contracts, and receipts in one place.' },
-  { emoji: '✅', title: 'Checklists', description: 'Never miss a step with structured task checklists.' },
-  { emoji: '💰', title: 'Budget Tracking', description: 'Monitor allocations and expenditures in real time.' },
-  { emoji: '👥', title: 'User Roles', description: 'Assign organizer, officer, or admin roles with ease.' },
-  { emoji: '📊', title: 'Audit Trail', description: 'Track every action with a full audit history.' },
-  { emoji: '⚡', title: 'Real-time Updates', description: 'Stay in sync with live data across your team.' },
+const features: { icon: IconDefinition; title: string; description: string }[] = [
+  { icon: faCalendarDays, title: 'Event Management', description: 'Plan and track events from proposal to completion.' },
+  { icon: faFileLines, title: 'Document Storage', description: 'Centralize permits, contracts, and receipts in one place.' },
+  { icon: faListCheck, title: 'Checklists', description: 'Never miss a step with structured task checklists.' },
+  { icon: faCoins, title: 'Budget Tracking', description: 'Monitor allocations and expenditures in real time.' },
+  { icon: faUsers, title: 'User Roles', description: 'Assign organizer, officer, or admin roles with ease.' },
+  { icon: faChartBar, title: 'Audit Trail', description: 'Track every action with a full audit history.' },
+  { icon: faBolt, title: 'Real-time Updates', description: 'Stay in sync with live data across your team.' },
 ]
 
 /**
@@ -100,7 +111,7 @@ function Hero() {
 
 /**
  * Features section displaying a 7-card grid (4 top, 3 bottom) of platform capabilities.
- * Each card shows an emoji icon, bold title, and short description.
+ * Each card shows a Font Awesome icon, bold title, and short description.
  */
 function Features() {
   const topRow = features.slice(0, 4)
@@ -137,13 +148,13 @@ function Features() {
 }
 
 /**
- * Individual feature card with emoji, title, and description.
+ * Individual feature card with Font Awesome icon, title, and description.
  * Reused inside the Features section grid.
  */
-function FeatureCard({ emoji, title, description }: { emoji: string; title: string; description: string }) {
+function FeatureCard({ icon, title, description }: { icon: IconDefinition; title: string; description: string }) {
   return (
     <Card className="flex flex-col gap-3 p-6">
-      <span className="text-3xl" role="img" aria-label={title}>{emoji}</span>
+      <FontAwesomeIcon icon={icon} className="text-2xl w-7 h-7 text-accent" aria-label={title} />
       <h3 className="font-body font-semibold text-off-white text-base">{title}</h3>
       <p className="font-body text-sm text-mid-gray leading-relaxed">{description}</p>
     </Card>

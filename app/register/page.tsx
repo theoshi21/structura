@@ -7,6 +7,8 @@ import Logo from '@/components/Logo'
 import Input from '@/components/Input'
 import Button from '@/components/Button'
 import Select from '@/components/Select'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faGraduationCap, faBuilding } from '@fortawesome/free-solid-svg-icons'
 
 /** Account type options for the toggle */
 type AccountType = 'student' | 'employee'
@@ -604,7 +606,8 @@ export default function RegisterPage() {
                   : 'text-mid-gray hover:text-off-white'
               }`}
             >
-              🎓 Student Organization
+              <FontAwesomeIcon icon={faGraduationCap} className="w-4 h-4" />
+              Student Organization
             </button>
             <button
               type="button"
@@ -615,7 +618,8 @@ export default function RegisterPage() {
                   : 'text-mid-gray hover:text-off-white'
               }`}
             >
-              🏛️ Administrative Office
+              <FontAwesomeIcon icon={faBuilding} className="w-4 h-4" />
+              Administrative Office
             </button>
           </div>
 

@@ -4,21 +4,30 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Logo from '@/components/Logo'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faChartBar,
+  faCalendarDays,
+  faFolder,
+  faListCheck,
+  faCoins,
+} from '@fortawesome/free-solid-svg-icons'
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
 
 /** Navigation links for the student sidebar */
-const navLinks = [
-  { href: '/student/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/student/events', label: 'My Events', icon: '📅' },
-  { href: '/student/documents', label: 'Documents', icon: '📁' },
-  { href: '/student/checklists', label: 'Checklists', icon: '✅' },
-  { href: '/student/budget', label: 'Budget', icon: '💰' },
+const navLinks: { href: string; label: string; icon: IconDefinition }[] = [
+  { href: '/student/dashboard', label: 'Dashboard', icon: faChartBar },
+  { href: '/student/events', label: 'My Events', icon: faCalendarDays },
+  { href: '/student/documents', label: 'Documents', icon: faFolder },
+  { href: '/student/checklists', label: 'Checklists', icon: faListCheck },
+  { href: '/student/budget', label: 'Budget', icon: faCoins },
 ]
 
 /**
  * Individual sidebar nav link with active state highlight.
  * Uses usePathname to determine if the link is currently active.
  */
-function NavLink({ href, label, icon }: { href: string; label: string; icon: string }) {
+function NavLink({ href, label, icon }: { href: string; label: string; icon: IconDefinition }) {
   const pathname = usePathname()
   const isActive = pathname === href || pathname.startsWith(href + '/')
 
@@ -34,7 +43,7 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon: str
         }
       `}
     >
-      <span className="text-base" aria-hidden="true">{icon}</span>
+      <FontAwesomeIcon icon={icon} className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
       {label}
     </Link>
   )

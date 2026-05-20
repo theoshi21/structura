@@ -6,6 +6,13 @@ import ProgressBar from '@/components/ProgressBar'
 import { realtimeService } from '@/lib/realtime'
 import type { Subscription } from '@/lib/realtime'
 import { Event, BudgetSummary } from '@/types'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faLandmark,
+  faClock,
+  faCoins,
+  faCalendarDays,
+} from '@fortawesome/free-solid-svg-icons'
 
 /** Formats a number as Philippine Peso */
 function formatPeso(amount: number): string {
@@ -122,10 +129,10 @@ export default function AdminDashboardPage() {
 
       {/* Stat cards row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon="🏛️" value={orgCount !== null ? String(orgCount) : '—'} label="Organizations" />
-        <StatCard icon="🕐" value={String(pendingCount)} label="Pending Reviews" />
-        <StatCard icon="💰" value={formatPeso(summary?.totalFunds ?? 0)} label="Total Fund" />
-        <StatCard icon="📅" value={String(activeCount)} label="Active Events" />
+        <StatCard icon={faLandmark} value={orgCount !== null ? String(orgCount) : '—'} label="Organizations" />
+        <StatCard icon={faClock} value={String(pendingCount)} label="Pending Reviews" />
+        <StatCard icon={faCoins} value={formatPeso(summary?.totalFunds ?? 0)} label="Total Fund" />
+        <StatCard icon={faCalendarDays} value={String(activeCount)} label="Active Events" />
       </div>
 
       {/* Bottom two-column layout */}
