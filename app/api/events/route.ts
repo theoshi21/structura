@@ -85,12 +85,14 @@ export async function GET(request: NextRequest) {
     const dateTo = params.get('dateTo')
     if (dateTo) filters.dateTo = new Date(dateTo)
 
-    // Admins see all events; organizers and officers only see their org's events.
-    // If a non-admin has an organizationId, scope by org.
-    // If they have no organizationId (legacy accounts), fall back to scoping by creator.
+    // Admins see all events; organizers and officers see their org's events.
+    // Pass both organizationId and createdBy so listEvents uses an OR filter —
+    // this ensures events created by the user are always visible even if the
+    // event's organization_id wasn't backfilled (covers legacy production data).
     if (user.role !== 'admin') {
       if (user.organizationId) {
         filters.organizationId = user.organizationId
+        filters.createdBy = user.id
       } else {
         filters.createdBy = user.id
       }

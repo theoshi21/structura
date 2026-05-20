@@ -266,12 +266,17 @@ export async function listEvents(filters?: EventFilters): Promise<Event[]> {
     query = query.eq('status', filters.status)
   }
 
-  if (filters?.createdBy) {
-    query = query.eq('created_by', filters.createdBy)
-  }
-
-  if (filters?.organizationId) {
+  // When both organizationId and createdBy are provided, use OR so the user
+  // sees events from their org AND events they personally created (covers legacy
+  // records where organization_id was not backfilled on the event row).
+  if (filters?.organizationId && filters?.createdBy) {
+    query = query.or(
+      `organization_id.eq.${filters.organizationId},created_by.eq.${filters.createdBy}`
+    )
+  } else if (filters?.organizationId) {
     query = query.eq('organization_id', filters.organizationId)
+  } else if (filters?.createdBy) {
+    query = query.eq('created_by', filters.createdBy)
   }
 
   if (filters?.dateFrom) {
