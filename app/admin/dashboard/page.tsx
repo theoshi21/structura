@@ -6,7 +6,6 @@ import ProgressBar from '@/components/ProgressBar'
 import { realtimeService } from '@/lib/realtime'
 import type { Subscription } from '@/lib/realtime'
 import { Event, BudgetSummary } from '@/types'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faLandmark,
   faClock,

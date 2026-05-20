@@ -18,14 +18,6 @@ function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-interface OrgBudget {
-  id: string
-  organizationId: string
-  organizationName: string
-  totalFunds: number
-  updatedAt: Date
-}
-
 interface OrgSummary {
   organizationId: string
   organizationName: string
