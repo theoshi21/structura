@@ -100,24 +100,49 @@ export default function StudentBudgetPage() {
           const allocRes = await fetch(`/api/budget/allocations?orgId=${budgetJson.data.organizationId}`)
           const allocJson = await allocRes.json()
           if (allocRes.ok && allocJson.success) {
-            const allocs = allocJson.data
-            const breakdown: EventAllocation[] = await Promise.all(
-              allocs.map(async (alloc: { event_id?: string; eventId?: string; amount: number }) => {
-                const ev = allEvents.find((e) => e.id === alloc.event_id || e.id === alloc.eventId)
-                const expForEvent = expJson.success
-                  ? expJson.data.filter((x: Expenditure) => x.eventId === (alloc.event_id ?? alloc.eventId))
-                  : []
-                const spent = expForEvent.reduce((s: number, x: Expenditure) => s + x.amount, 0)
-                return {
-                  eventId: alloc.event_id ?? alloc.eventId,
-                  eventName: ev?.name ?? 'Unknown Event',
-                  allocated: Number(alloc.amount),
-                  spent,
-                  remaining: Number(alloc.amount) - spent,
-                }
-              })
-            )
+            const allocs: { eventId: string; amount: number }[] = allocJson.data
+
+            // Fetch any events that aren't already in the events list
+            // (can happen when organizationId is missing from the session)
+            const knownIds = new Set(allEvents.map((e) => e.id))
+            const missingIds = allocs.map((a) => a.eventId).filter((id) => id && !knownIds.has(id))
+            let extraEvents: Event[] = []
+            if (missingIds.length > 0) {
+              const extraResults = await Promise.all(
+                missingIds.map((id) =>
+                  fetch(`/api/events/${id}`)
+                    .then((r) => r.json())
+                    .then((j) => (j.success ? j.data as Event : null))
+                    .catch(() => null)
+                )
+              )
+              extraEvents = extraResults.filter((e): e is Event => e !== null)
+            }
+            const allKnownEvents = [...allEvents, ...extraEvents]
+
+            const breakdown = allocs.map((alloc) => {
+              const ev = allKnownEvents.find((e) => e.id === alloc.eventId)
+              const expForEvent = expJson.success
+                ? expJson.data.filter((x: Expenditure) => x.eventId === alloc.eventId)
+                : []
+              const spent = expForEvent.reduce((s: number, x: Expenditure) => s + x.amount, 0)
+              return {
+                eventId: alloc.eventId,
+                eventName: ev?.name ?? alloc.eventId,
+                allocated: Number(alloc.amount),
+                spent,
+                remaining: Number(alloc.amount) - spent,
+              }
+            })
             setEventAllocations(breakdown)
+
+            // Merge extra events into the events state so the expenditures table resolves names too
+            if (extraEvents.length > 0) {
+              setEvents((prev) => {
+                const ids = new Set(prev.map((e) => e.id))
+                return [...prev, ...extraEvents.filter((e) => !ids.has(e.id))]
+              })
+            }
           }
         }
       }
