@@ -81,7 +81,7 @@ function Hero() {
         <Badge label="Student Organization Platform" color="purple" className="tracking-widest text-xs" />
 
         {/* Heading */}
-        <h1 className="font-heading text-5xl md:text-6xl text-off-white leading-tight">
+        <h1 className="font-bold sfont-heading text-5xl md:text-6xl text-off-white leading-tight">
           Manage without the{' '}
           <span className="text-accent">chaos.</span>
         </h1>
