@@ -266,12 +266,14 @@ export async function listEvents(filters?: EventFilters): Promise<Event[]> {
     query = query.eq('status', filters.status)
   }
 
-  // When both organizationId and createdBy are provided, use OR so the user
-  // sees events from their org AND events they personally created (covers legacy
-  // records where organization_id was not backfilled on the event row).
+  // Scope by organization and/or creator.
+  // When both are provided, use OR: show events belonging to the org OR created
+  // by this user. This covers:
+  //   - Events created by any org member (org-scoped)
+  //   - Events created by this user whose organization_id is still NULL (legacy)
   if (filters?.organizationId && filters?.createdBy) {
     query = query.or(
-      `organization_id.eq.${filters.organizationId},created_by.eq.${filters.createdBy}`
+      `organization_id.eq.${filters.organizationId},and(organization_id.is.null,created_by.eq.${filters.createdBy})`
     )
   } else if (filters?.organizationId) {
     query = query.eq('organization_id', filters.organizationId)
