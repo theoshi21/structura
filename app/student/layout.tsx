@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import Logo from '@/components/Logo'
+import EditProfileModal from '@/components/EditProfileModal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faChartBar,
@@ -57,6 +58,7 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon: Ico
 function StudentSidebar() {
   const router = useRouter()
   const [user, setUser] = useState<{ username: string; email: string; organizationName: string | null } | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   /** Fetches the current user's profile from the API */
   useEffect(() => {
@@ -79,48 +81,67 @@ function StudentSidebar() {
   const displaySub = user?.organizationName ?? user?.email ?? ''
   const initial = displayName.charAt(0).toUpperCase()
   return (
-    <aside className="fixed top-0 left-0 h-screen w-56 bg-[#16162A] border-r border-white/5 flex flex-col z-40">
-      {/* Top: Logo + role badge */}
-      <div className="px-5 pt-6 pb-4 flex flex-col gap-3">
-        <Logo white />
-        <span className="inline-flex items-center self-start rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold font-body text-white tracking-wide">
-          Student
-        </span>
-      </div>
-
-      {/* Divider */}
-      <div className="mx-5 border-t border-white/10" />
-
-      {/* Nav links */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-1" aria-label="Student navigation">
-        {navLinks.map((link) => (
-          <NavLink key={link.href} {...link} />
-        ))}
-      </nav>
-
-      {/* Bottom: User info + logout */}
-      <div className="px-4 pb-6 pt-4 border-t border-white/10 flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          {/* Avatar circle */}
-          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-white font-body">{initial}</span>
-          </div>
-          {/* Name + email */}
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold text-off-white font-body truncate">{displayName}</span>
-            <span className="text-xs text-mid-gray font-body truncate">{displaySub}</span>
-          </div>
+    <>
+      <aside className="fixed top-0 left-0 h-screen w-56 bg-[#16162A] border-r border-white/5 flex flex-col z-40">
+        {/* Top: Logo + role badge */}
+        <div className="px-5 pt-6 pb-4 flex flex-col gap-3">
+          <Logo white />
+          <span className="inline-flex items-center self-start rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold font-body text-white tracking-wide">
+            Student
+          </span>
         </div>
-        {/* Log out link */}
-        <a
-          href="#"
-          className="text-xs text-mid-gray hover:text-off-white font-body transition-colors duration-150"
-          onClick={handleLogout}
-        >
-          ← Log out
-        </a>
-      </div>
-    </aside>
+
+        {/* Divider */}
+        <div className="mx-5 border-t border-white/10" />
+
+        {/* Nav links */}
+        <nav className="flex-1 px-3 py-4 flex flex-col gap-1" aria-label="Student navigation">
+          {navLinks.map((link) => (
+            <NavLink key={link.href} {...link} />
+          ))}
+        </nav>
+
+        {/* Bottom: User info + logout */}
+        <div className="px-4 pb-6 pt-4 border-t border-white/10 flex flex-col gap-3">
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="flex items-center gap-3 w-full text-left rounded-lg hover:bg-white/5 transition-colors duration-150 p-1 -m-1 group"
+            aria-label="Edit profile"
+          >
+            {/* Avatar circle */}
+            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0 group-hover:ring-2 group-hover:ring-primary/50 transition-all">
+              <span className="text-sm font-bold text-white font-body">{initial}</span>
+            </div>
+            {/* Name + email */}
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-semibold text-off-white font-body truncate">{displayName}</span>
+              <span className="text-xs text-mid-gray font-body truncate">{displaySub}</span>
+            </div>
+            {/* Edit hint icon */}
+            <svg className="w-3.5 h-3.5 text-mid-gray opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+            </svg>
+          </button>
+          {/* Log out link */}
+          <a
+            href="#"
+            className="text-xs text-mid-gray hover:text-off-white font-body transition-colors duration-150"
+            onClick={handleLogout}
+          >
+            ← Log out
+          </a>
+        </div>
+      </aside>
+
+      {/* Edit profile modal */}
+      <EditProfileModal
+        open={profileOpen}
+        user={user}
+        onClose={() => setProfileOpen(false)}
+        onSaved={(updated) => setUser((prev) => prev ? { ...prev, ...updated } : prev)}
+        accentColor="bg-primary"
+      />
+    </>
   )
 }
 
