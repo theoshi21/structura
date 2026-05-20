@@ -4,6 +4,8 @@
 
 ## Part 1: Traceability Matrix
 
+### User Authentication Module
+
 | Requirement ID | Requirement Description | Test Case ID(s) |
 |---|---|---|
 | UF1 | Create user accounts with hashed passwords | UTC1.1, UTC1.2, UTC1.3 |
@@ -11,33 +13,63 @@
 | UF3 | User logout functionality | UTC3.1 |
 | UF4 | Prevent unauthenticated access to platform features | UTC4.1 |
 | UF5 | Display error messages for invalid login attempts | UTC2.2 |
+
+### Role-Based Access Control Module
+
+| Requirement ID | Requirement Description | Test Case ID(s) |
+|---|---|---|
 | RF1 | Assign exactly one role per user | RTC1.1 |
 | RF2 | Update user roles by Admin | RTC2.1, RTC2.2 |
 | RF3 | Enforce role-based permissions for all actions | RTC3.1, RTC3.2, RTC3.3 |
 | RF4 | Deny unauthorized actions and display an appropriate message | RTC4.1 |
 | RF5 | Display features and navigation based on the user's role | RTC5.1 |
+
+### Event Management Module
+
+| Requirement ID | Requirement Description | Test Case ID(s) |
+|---|---|---|
 | EF1 | Create event proposals | ETC1.1, ETC1.2 |
 | EF2 | Update event proposals | ETC2.1 |
 | EF3 | View event details with associated documents, checklists, and budget | ETC3.1 |
 | EF4 | Delete event proposals | ETC4.1 |
 | EF5 | Change event status | ETC5.1, ETC5.2 |
+
+### Document Management Module
+
+| Requirement ID | Requirement Description | Test Case ID(s) |
+|---|---|---|
 | DF1 | Upload documents and link to events | DTC1.1, DTC1.2 |
 | DF2 | View all documents associated with an event | DTC2.1 |
 | DF3 | Support document types | DTC3.1 |
 | DF4 | Delete documents | DTC4.1 |
 | DF5 | Validate file format and size on upload | DTC5.1, DTC5.2 |
+
+### Checklist Management Module
+
+| Requirement ID | Requirement Description | Test Case ID(s) |
+|---|---|---|
 | CF1 | Create checklist templates | CTC1.1 |
 | CF2 | Apply checklist templates to events | CTC2.1 |
 | CF3 | Create custom checklists for events | CTC3.1 |
 | CF4 | Add, modify, or remove checklist items | CTC4.1, CTC4.2 |
 | CF5 | Mark checklist items as complete | CTC5.1 |
 | CF6 | Calculate and display completion percentage | CTC6.1 |
+
+### Budget Management Module
+
+| Requirement ID | Requirement Description | Test Case ID(s) |
+|---|---|---|
 | BF1 | Maintain organizational budget with total available funds | BTC1.1 |
 | BF2 | Allocate funds to events | BTC2.1, BTC2.2 |
 | BF3 | Record expenditures against events | BTC3.1, BTC3.2 |
 | BF4 | Display allocated budget, total expenditures, and remaining funds | BTC4.1 |
 | BF5 | Prevent over-allocation of funds | BTC5.1 |
 | BF6 | Require financial document for each expenditure | BTC6.1 |
+
+### Audit Trail Module
+
+| Requirement ID | Requirement Description | Test Case ID(s) |
+|---|---|---|
 | AF1 | Record user ID, action type, and timestamp for critical operations | ATC1.1 |
 | AF2 | Display audit logs for budget allocations, expenditures, and status changes | ATC2.1 |
 | AF3 | Prevent modification or deletion of audit log entries | ATC3.1 |
