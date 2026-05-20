@@ -20,14 +20,17 @@
     "bcrypt": "^5.1.1",
     "iron-session": "^8.0.4",
     "next": "^15.3.3",
+    "nodemailer": "^6.9.14",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "resend": "4.5.1"
   },
   "devDependencies": {
     "@fast-check/vitest": "^0.4.0",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^22.15.21",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.5",
     "@vitest/ui": "^4.1.5",
