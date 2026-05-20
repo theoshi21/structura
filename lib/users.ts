@@ -63,7 +63,7 @@ export async function createUser(
       password_hash: passwordHash,
       role,
     })
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select('id, email, username, role, organization_id, organization_name, created_at, updated_at')
     .single()
 
   if (error) {
@@ -75,6 +75,7 @@ export async function createUser(
     email: user.email,
     username: user.username,
     role: user.role as Role,
+    organizationId: user.organization_id ?? null,
     organizationName: user.organization_name ?? null,
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
@@ -106,7 +107,7 @@ export async function getUserById(id: string): Promise<User | null> {
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select('id, email, username, role, organization_id, organization_name, created_at, updated_at')
     .eq('id', id)
     .single()
 
@@ -119,6 +120,7 @@ export async function getUserById(id: string): Promise<User | null> {
     email: user.email,
     username: user.username,
     role: user.role as Role,
+    organizationId: user.organization_id ?? null,
     organizationName: user.organization_name ?? null,
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
@@ -139,7 +141,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select('id, email, username, role, organization_id, organization_name, created_at, updated_at')
     .eq('email', email)
     .single()
 
@@ -152,6 +154,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     email: user.email,
     username: user.username,
     role: user.role as Role,
+    organizationId: user.organization_id ?? null,
     organizationName: user.organization_name ?? null,
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
@@ -186,7 +189,7 @@ export async function updateUserRole(userId: string, role: Role, adminId?: strin
     .from('users')
     .update({ role, updated_at: new Date().toISOString() })
     .eq('id', userId)
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select('id, email, username, role, organization_id, organization_name, created_at, updated_at')
     .single()
 
   if (error) {
@@ -202,6 +205,7 @@ export async function updateUserRole(userId: string, role: Role, adminId?: strin
     email: user.email,
     username: user.username,
     role: user.role as Role,
+    organizationId: user.organization_id ?? null,
     organizationName: user.organization_name ?? null,
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
@@ -222,7 +226,7 @@ export async function listUsers(): Promise<User[]> {
 
   const { data: users, error } = await supabase
     .from('users')
-    .select('id, email, username, role, organization_name, created_at, updated_at')
+    .select('id, email, username, role, organization_id, organization_name, created_at, updated_at')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -234,6 +238,7 @@ export async function listUsers(): Promise<User[]> {
     email: user.email,
     username: user.username,
     role: user.role as Role,
+    organizationId: user.organization_id ?? null,
     organizationName: user.organization_name ?? null,
     createdAt: new Date(user.created_at),
     updatedAt: new Date(user.updated_at),
