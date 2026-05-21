@@ -7,9 +7,9 @@ import Pagination from '@/components/Pagination'
 import { useToast } from '@/components/Toast'
 import { realtimeService } from '@/lib/realtime'
 import type { Subscription } from '@/lib/realtime'
-import { Event, EventStatus, Document } from '@/types'
+import { Event, EventStatus, Document, Organization } from '@/types'
 
-/** Number of submissions shown per page */
+/** Number of submissions shown per org group per page */
 const PAGE_SIZE = 10
 
 /** Tab definitions for the submissions filter */
@@ -285,30 +285,137 @@ function ReviewModal({
   )
 }
 
+/** A single organization group with its own collapsible table and pagination */
+function OrgGroup({
+  orgName,
+  events,
+  onReview,
+}: {
+  orgName: string
+  events: Event[]
+  onReview: (event: Event) => void
+}) {
+  const [collapsed, setCollapsed] = useState(false)
+  const [page, setPage] = useState(1)
+
+  const totalPages = Math.ceil(events.length / PAGE_SIZE)
+  const visible = events.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  return (
+    <div className="flex flex-col gap-0">
+      {/* Org header row — click to collapse/expand */}
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className="flex items-center gap-3 px-5 py-3 bg-surface-raised border border-light-gray/30 rounded-t-xl text-left hover:bg-surface-raised/80 transition-colors"
+        aria-expanded={!collapsed}
+      >
+        {/* Chevron */}
+        <svg
+          className={`w-4 h-4 text-mid-gray flex-shrink-0 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+        <span className="font-heading text-sm font-semibold text-off-white">{orgName}</span>
+        <span className="ml-auto text-xs text-mid-gray font-body">
+          {events.length} {events.length === 1 ? 'submission' : 'submissions'}
+        </span>
+      </button>
+
+      {/* Collapsible table */}
+      {!collapsed && (
+        <div className="border border-t-0 border-light-gray/30 rounded-b-xl overflow-hidden bg-surface">
+          <table className="w-full text-sm font-body">
+            <thead>
+              <tr className="border-b border-light-gray/30 bg-surface-raised/50">
+                {['Event Name', 'Date', 'Venue', 'Status', 'Action'].map((col) => (
+                  <th key={col} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((event) => (
+                <tr key={event.id} className="border-b border-light-gray/20 last:border-0 hover:bg-surface-raised transition-colors">
+                  <td className="px-5 py-3.5 text-off-white font-medium">{event.name}</td>
+                  <td className="px-5 py-3.5 text-mid-gray">{formatDate(event.eventDate)}</td>
+                  <td className="px-5 py-3.5 text-mid-gray">{event.location ?? '—'}</td>
+                  <td className="px-5 py-3.5">
+                    <Badge
+                      label={event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                      color={statusColor(event.status)}
+                    />
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <button
+                      onClick={() => onReview(event)}
+                      className="text-accent hover:underline font-medium"
+                    >
+                      {event.status === 'proposed' ? 'Review' : 'View'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {totalPages > 1 && (
+            <div className="px-5 py-3 border-t border-light-gray/20">
+              <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /**
  * Submissions page for the admin portal.
- * Fetches all events and displays a filterable review table.
+ * Fetches all events and organizations, then groups submissions by organization.
+ * Each org section is collapsible and has its own pagination.
  * Clicking "Review" opens a modal with full event details, documents, and approve/reject actions.
  */
 export default function AdminSubmissionsPage() {
   const toast = useToast()
   const [activeTab, setActiveTab] = useState('all')
   const [events, setEvents] = useState<Event[]>([])
+  const [orgMap, setOrgMap] = useState<Map<string, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const [connected, setConnected] = useState(false)
   const [reviewingEvent, setReviewingEvent] = useState<Event | null>(null)
   const [acting, setActing] = useState(false)
-  const [page, setPage] = useState(1)
 
-  /** Fetches events from the API, optionally filtered by status */
-  async function fetchEvents() {
+  /** Fetches events and organizations in parallel */
+  async function fetchData() {
     setLoading(true)
     try {
       const url = activeTab === 'all' ? '/api/events' : `/api/events?status=${activeTab}`
-      const res = await fetch(url)
-      const json = await res.json()
-      if (!res.ok || !json.success) throw new Error(json.error?.message ?? 'Failed to load submissions')
-      setEvents(json.data)
+      const [eventsRes, orgsRes] = await Promise.all([
+        fetch(url),
+        fetch('/api/organizations'),
+      ])
+
+      const [eventsJson, orgsJson] = await Promise.all([
+        eventsRes.json(),
+        orgsRes.json(),
+      ])
+
+      if (!eventsRes.ok || !eventsJson.success) {
+        throw new Error(eventsJson.error?.message ?? 'Failed to load submissions')
+      }
+
+      setEvents(eventsJson.data)
+
+      // Build a lookup map: organizationId → organizationName
+      if (orgsJson.success) {
+        const map = new Map<string, string>()
+        for (const org of orgsJson.data as Organization[]) {
+          map.set(org.id, org.name)
+        }
+        setOrgMap(map)
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to load submissions')
     } finally {
@@ -316,11 +423,11 @@ export default function AdminSubmissionsPage() {
     }
   }
 
-  useEffect(() => { setPage(1); fetchEvents() }, [activeTab])
+  useEffect(() => { fetchData() }, [activeTab])
 
   useEffect(() => {
     let subscription: Subscription | null = null
-    subscription = realtimeService.subscribeToEvents(() => fetchEvents())
+    subscription = realtimeService.subscribeToEvents(() => fetchData())
     setConnected(true)
     return () => { if (subscription) realtimeService.unsubscribe(subscription) }
   }, [])
@@ -348,6 +455,35 @@ export default function AdminSubmissionsPage() {
     }
   }
 
+  /**
+   * Groups events by organization.
+   * Events with a known organizationId are grouped under the org name.
+   * Events with no organizationId fall into an "Unassigned" group.
+   */
+  function groupByOrg(events: Event[]): { orgName: string; events: Event[] }[] {
+    const groups = new Map<string, Event[]>()
+
+    for (const event of events) {
+      const key = event.organizationId
+        ? (orgMap.get(event.organizationId) ?? `Unknown Org (${event.organizationId.slice(0, 8)})`)
+        : 'Unassigned'
+
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(event)
+    }
+
+    // Sort groups alphabetically, with "Unassigned" always last
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => {
+        if (a === 'Unassigned') return 1
+        if (b === 'Unassigned') return -1
+        return a.localeCompare(b)
+      })
+      .map(([orgName, events]) => ({ orgName, events }))
+  }
+
+  const groups = groupByOrg(events)
+
   return (
     <div className="p-8 flex flex-col gap-6">
       {/* Page title */}
@@ -361,57 +497,41 @@ export default function AdminSubmissionsPage() {
 
       <FilterTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
 
-      {/* Submissions table */}
-      <div className="rounded-xl border border-light-gray/30 overflow-hidden bg-surface">
-        <table className="w-full text-sm font-body">
-          <thead>
-            <tr className="border-b border-light-gray/30 bg-surface-raised">
-              {['Event Name', 'Date', 'Venue', 'Status', 'Action'].map((col) => (
-                <th key={col} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <><SkeletonRow /><SkeletonRow /><SkeletonRow /></>
-            ) : events.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-mid-gray">No submissions found.</td>
+      {/* Grouped submissions */}
+      {loading ? (
+        /* Loading skeleton — single flat table placeholder */
+        <div className="rounded-xl border border-light-gray/30 overflow-hidden bg-surface">
+          <table className="w-full text-sm font-body">
+            <thead>
+              <tr className="border-b border-light-gray/30 bg-surface-raised">
+                {['Event Name', 'Date', 'Venue', 'Status', 'Action'].map((col) => (
+                  <th key={col} className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide text-mid-gray">
+                    {col}
+                  </th>
+                ))}
               </tr>
-            ) : (
-              events.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((event) => (
-                <tr key={event.id} className="border-b border-light-gray/20 last:border-0 hover:bg-surface-raised transition-colors">
-                  <td className="px-5 py-3.5 text-off-white font-medium">{event.name}</td>
-                  <td className="px-5 py-3.5 text-mid-gray">{formatDate(event.eventDate)}</td>
-                  <td className="px-5 py-3.5 text-mid-gray">{event.location ?? '—'}</td>
-                  <td className="px-5 py-3.5">
-                    <Badge
-                      label={event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                      color={statusColor(event.status)}
-                    />
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <button
-                      onClick={() => setReviewingEvent(event)}
-                      className="text-accent hover:underline font-medium"
-                    >
-                      {event.status === 'proposed' ? 'Review' : 'View'}
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <Pagination
-        page={page}
-        totalPages={Math.ceil(events.length / PAGE_SIZE)}
-        onChange={setPage}
-      />
+            </thead>
+            <tbody>
+              <SkeletonRow /><SkeletonRow /><SkeletonRow />
+            </tbody>
+          </table>
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="rounded-xl border border-light-gray/30 bg-surface px-5 py-10 text-center text-mid-gray font-body">
+          No submissions found.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {groups.map(({ orgName, events: orgEvents }) => (
+            <OrgGroup
+              key={orgName}
+              orgName={orgName}
+              events={orgEvents}
+              onReview={setReviewingEvent}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Review modal */}
       {reviewingEvent && (

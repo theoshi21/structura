@@ -59,7 +59,7 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon: Ico
  */
 function AdminSidebar() {
   const router = useRouter()
-  const [user, setUser] = useState<{ username: string; email: string; organizationName: string | null } | null>(null)
+  const [user, setUser] = useState<{ username: string; email: string; role: string; organizationName: string | null } | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
 
   /** Fetches the current user's profile from the API */
@@ -88,8 +88,8 @@ function AdminSidebar() {
         {/* Top: Logo + role badge */}
         <div className="px-5 pt-6 pb-4 flex flex-col gap-3">
           <Logo white />
-          <span className="inline-flex items-center self-start rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-semibold font-body text-white tracking-wide">
-            Office
+          <span className="inline-flex items-center self-start rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-semibold font-body text-white tracking-wide capitalize">
+            {user?.role ?? 'Admin'}
           </span>
         </div>
 
