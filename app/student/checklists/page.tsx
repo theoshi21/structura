@@ -40,6 +40,11 @@ interface ChecklistCardProps {
  */
 function ChecklistCard({ checklist, eventName, onToggle, onAddItem, onRemoveItem }: ChecklistCardProps) {
   const [items, setItems] = useState<ChecklistItem[]>(checklist.items)
+
+  // Keep local items in sync when the parent updates the checklist prop
+  useEffect(() => {
+    setItems(checklist.items)
+  }, [checklist.items])
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
@@ -371,16 +376,29 @@ export default function StudentChecklistsPage() {
   const [error, setError] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
 
-  /** Fetches all events and their checklists */
+  /**
+   * Fetches events and all checklists in two parallel requests instead of N+1.
+   * /api/events gives us the name map; /api/checklists returns all checklists at once.
+   */
   const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const eventsRes = await fetch('/api/events')
-      const eventsJson = await eventsRes.json()
+      const [eventsRes, checklistsRes] = await Promise.all([
+        fetch('/api/events'),
+        fetch('/api/checklists'),
+      ])
+
+      const [eventsJson, checklistsJson] = await Promise.all([
+        eventsRes.json(),
+        checklistsRes.json(),
+      ])
 
       if (!eventsRes.ok || !eventsJson.success) {
         throw new Error(eventsJson.error?.message ?? 'Failed to load events')
+      }
+      if (!checklistsRes.ok || !checklistsJson.success) {
+        throw new Error(checklistsJson.error?.message ?? 'Failed to load checklists')
       }
 
       const fetchedEvents: { id: string; name: string }[] = eventsJson.data
@@ -390,21 +408,7 @@ export default function StudentChecklistsPage() {
       fetchedEvents.forEach((ev) => { nameMap[ev.id] = ev.name })
       setEventNames(nameMap)
 
-      // Fetch checklists for each event in parallel
-      const checklistResults = await Promise.all(
-        fetchedEvents.map(async (ev) => {
-          try {
-            const res = await fetch(`/api/events/${ev.id}/checklist`)
-            const json = await res.json()
-            if (res.ok && json.success && json.data) return json.data as Checklist
-            return null
-          } catch {
-            return null
-          }
-        })
-      )
-
-      setChecklists(checklistResults.filter((c): c is Checklist => c !== null))
+      setChecklists(checklistsJson.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load checklists')
     } finally {
@@ -425,7 +429,10 @@ export default function StudentChecklistsPage() {
     }
   }
 
-  /** Calls the add item API for a checklist, then re-fetches to get the real item ID */
+  /**
+   * Calls the add item API, then patches local state with the returned item.
+   * Avoids a full re-fetch of all events + checklists just to get one new item.
+   */
   async function handleAddItem(checklistId: string, description: string) {
     const res = await fetch(`/api/checklists/${checklistId}/items`, {
       method: 'POST',
@@ -436,8 +443,15 @@ export default function StudentChecklistsPage() {
     if (!res.ok || !json.success) {
       throw new Error(json.error?.message ?? 'Failed to add item')
     }
-    // Re-fetch so the card renders with the real UUID from the database
-    await fetchData()
+    // Patch the checklist in local state with the new item — no full re-fetch needed
+    const newItem: ChecklistItem = json.data
+    setChecklists((prev) =>
+      prev.map((c) =>
+        c.id === checklistId
+          ? { ...c, items: [...c.items, newItem] }
+          : c
+      )
+    )
   }
 
   /** Calls the remove item API for a checklist item */

@@ -355,6 +355,7 @@ export async function createCustomChecklist(
 
 /**
  * Returns the checklist for a given event, including all items.
+ * Uses a single joined query to avoid two sequential round-trips.
  * @param eventId - The event's unique identifier
  * @returns Promise resolving to the Checklist or null if none exists
  */
@@ -363,21 +364,55 @@ export async function getChecklistByEvent(eventId: string): Promise<Checklist | 
 
   const supabase = createSupabaseClient()
 
+  // Fetch checklist and its items in one round-trip via a nested select
   const { data: checklist, error } = await supabase
     .from('checklists')
-    .select('id, event_id, created_from_template, created_at')
+    .select(`
+      id, event_id, created_from_template, created_at,
+      checklist_items (
+        id, checklist_id, description, is_completed,
+        completed_at, completed_by, order_index, created_at
+      )
+    `)
     .eq('event_id', eventId)
+    .order('order_index', { ascending: true, referencedTable: 'checklist_items' })
     .single()
 
   if (error || !checklist) return null
 
-  const { data: itemRows } = await supabase
-    .from('checklist_items')
-    .select('id, checklist_id, description, is_completed, completed_at, completed_by, order_index, created_at')
-    .eq('checklist_id', checklist.id)
-    .order('order_index', { ascending: true })
+  const items = ((checklist as any).checklist_items ?? []).map(mapChecklistItem)
+  return mapChecklist(checklist, items)
+}
 
-  return mapChecklist(checklist, (itemRows ?? []).map(mapChecklistItem))
+/**
+ * Returns all checklists for a given list of event IDs, including items.
+ * Uses a single query instead of one query per event, eliminating the N+1 problem.
+ * @param eventIds - Array of event IDs to fetch checklists for
+ * @returns Promise resolving to an array of Checklists
+ */
+export async function getChecklistsByEventIds(eventIds: string[]): Promise<Checklist[]> {
+  if (!eventIds.length) return []
+
+  const supabase = createSupabaseClient()
+
+  const { data: rows, error } = await supabase
+    .from('checklists')
+    .select(`
+      id, event_id, created_from_template, created_at,
+      checklist_items (
+        id, checklist_id, description, is_completed,
+        completed_at, completed_by, order_index, created_at
+      )
+    `)
+    .in('event_id', eventIds)
+    .order('order_index', { ascending: true, referencedTable: 'checklist_items' })
+
+  if (error) throw new Error(`Failed to list checklists: ${error.message}`)
+
+  return (rows ?? []).map((row) => {
+    const items = ((row as any).checklist_items ?? []).map(mapChecklistItem)
+    return mapChecklist(row, items)
+  })
 }
 
 /**
