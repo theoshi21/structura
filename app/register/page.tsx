@@ -170,12 +170,6 @@ function StudentForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-          <p className="font-body text-sm text-red-400">{error}</p>
-        </div>
-      )}
-
       <SectionDivider label="Personal Information" />
 
       <div className="grid grid-cols-2 gap-4">
@@ -326,6 +320,12 @@ function StudentForm() {
         </span>
       </label>
 
+      {error && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+          <p className="font-body text-sm text-red-400">{error}</p>
+        </div>
+      )}
+
       <Button
         type="submit"
         variant="primary"
@@ -418,12 +418,6 @@ function EmployeeForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      {error && (
-        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-          <p className="font-body text-sm text-red-400">{error}</p>
-        </div>
-      )}
-
       <SectionDivider label="Personal Information" />
 
       <div className="grid grid-cols-2 gap-4">
@@ -558,6 +552,12 @@ function EmployeeForm() {
           <Link href="#" className="text-accent hover:underline">Privacy Policy</Link>
         </span>
       </label>
+
+      {error && (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+          <p className="font-body text-sm text-red-400">{error}</p>
+        </div>
+      )}
 
       <Button
         type="submit"
